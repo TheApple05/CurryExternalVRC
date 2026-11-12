@@ -1,0 +1,1825 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CurryClient</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f2f2f4;
+      --muted: #a4a5ab;
+      --line: #36373d;
+      --paper: #1c1d21;
+      --ground: #111215;
+      --red: #ef343f;
+      --red-dark: #c52631;
+      --surface: #17181c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        repeating-linear-gradient(0deg, #ffffff04 0 1px, transparent 1px 48px),
+        repeating-linear-gradient(90deg, #ffffff04 0 1px, transparent 1px 48px),
+        var(--ground);
+      font: 15px/1.45 system-ui, sans-serif;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px max(24px, calc((100vw - 1060px) / 2));
+      border-bottom: 1px solid var(--line);
+      background: #17181cf2;
+      box-shadow: inset 0 2px var(--red);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink);
+      font-size: 16px;
+      font-weight: 900;
+      -webkit-text-stroke: 0.35px currentColor;
+      text-transform: none;
+    }
+
+    .brand::before {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: var(--red);
+      content: "";
+    }
+
+    .header-actions { display: flex; align-items: center; gap: 16px; }
+    .local-note { color: var(--muted); font-size: 12px; }
+
+    .login-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      color: white;
+      background: var(--red);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .login-link:hover { border-color: var(--red-dark); background: var(--red-dark); }
+
+    main {
+      width: min(1060px, calc(100% - 40px));
+      margin: 42px auto;
+    }
+
+    .intro {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font: 700 34px/1.1 "Trebuchet MS", system-ui, sans-serif;
+    }
+
+    .intro p { margin: 8px 0 0; color: var(--muted); }
+
+    .count {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--muted);
+      background: var(--paper);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 190px minmax(0, 1fr);
+      min-height: 470px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--paper);
+      box-shadow: 0 16px 42px #00000030;
+    }
+
+    nav {
+      padding: 18px 12px;
+      border-right: 1px solid var(--line);
+      background: #151619;
+    }
+
+    nav button {
+      width: 100%;
+      padding: 11px 12px;
+      border: 0;
+      border-radius: 4px;
+      color: var(--muted);
+      background: transparent;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+      transition: color 140ms ease, background 140ms ease;
+    }
+
+    nav button[aria-selected="true"] {
+      color: white;
+      background: #342024;
+      box-shadow: inset 2px 0 var(--red);
+      font-weight: 650;
+    }
+
+    nav button[aria-selected="false"]:hover { color: var(--ink); background: #222328; }
+
+    .content { min-width: 0; padding: 24px; }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    h2 { margin: 0; font-size: 19px; }
+    .section-heading span { color: var(--muted); font-size: 13px; }
+    .section-actions { display: flex; align-items: center; gap: 12px; }
+
+    .browser-link {
+      padding: 6px 10px;
+      border: 1px solid #633139;
+      border-radius: 4px;
+      color: #ff737a;
+      background: #2a1b1f;
+      font-size: 13px;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .browser-link:hover { border-color: var(--red); background: #382025; }
+
+    .avatar-browser {
+      margin: 20px 0 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .browser-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .browser-title-row h3 { margin: 0; font-size: 16px; }
+    .browser-credit { color: var(--muted); font-size: 12px; }
+
+    .avatar-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      margin: 12px 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .shuffle-button { min-height: 39px; }
+    .avatar-status { min-height: 18px; margin: 8px 0; color: var(--muted); font-size: 12px; }
+
+    .avatar-results {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .avatar-card { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+    .avatar-preview { aspect-ratio: 16 / 10; overflow: hidden; background: #101114; }
+    .avatar-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .avatar-card-content { padding: 10px; }
+    .avatar-card-title { min-height: 40px; overflow-wrap: anywhere; font-size: 13px; font-weight: 650; }
+    .avatar-card-author, .avatar-card-platform { margin-top: 4px; color: var(--muted); font-size: 11px; }
+    .avatar-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }
+    .avatar-card-actions a, .avatar-card-actions button { min-width: 0; min-height: 32px; padding: 5px 7px; font-size: 12px; text-align: center; }
+    .avatar-open { border-color: #633139; color: #ff737a; background: #2a1b1f; text-decoration: none; }
+    .save-avatar { border-color: var(--red); color: white; background: var(--red); }
+    .save-avatar:disabled { border-color: var(--line); color: var(--muted); background: #24252a; cursor: default; }
+    .load-more { display: block; margin: 14px auto 0; }
+
+    .world-browser {
+      margin: 20px 0 28px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .world-browser p { color: var(--muted); font-size: 13px; }
+
+    .world-search {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1.4fr) auto;
+      align-items: end;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--surface);
+    }
+
+    label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 650; }
+
+    input {
+      width: 100%;
+      height: 39px;
+      padding: 8px 10px;
+      border: 1px solid #44454c;
+      border-radius: 4px;
+      color: var(--ink);
+      background: #111215;
+      font: inherit;
+    }
+
+    input:focus, button:focus-visible, a:focus-visible {
+      outline: 2px solid var(--red);
+      outline-offset: 2px;
+    }
+
+    button, .open-link {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--ink);
+      background: #24252a;
+      font: inherit;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .add-button {
+      border-color: var(--red);
+      color: white;
+      background: var(--red);
+      font-weight: 650;
+    }
+
+    .add-button:hover { border-color: var(--red-dark); background: var(--red-dark); }
+
+    .list-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 25px 0 8px;
+    }
+
+    .list-head label { margin: 0; align-self: center; }
+    .search { width: min(250px, 55%); height: 34px; font-size: 13px; }
+
+    .items { border-top: 1px solid var(--line); }
+
+    .item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 2px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .item-name { overflow-wrap: anywhere; font-weight: 620; }
+    .item-id { display: block; margin-top: 2px; color: var(--muted); font: 12px/1.4 ui-monospace, monospace; }
+    .open-link { min-height: 34px; padding: 6px 11px; border-color: #633139; color: #ff737a; background: #2a1b1f; }
+    .open-link:hover { border-color: var(--red); background: #382025; }
+    .remove-button { min-height: 34px; padding: 6px 10px; color: #ff777d; }
+
+    .empty {
+      padding: 34px 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .message { min-height: 20px; margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+    .account-form { grid-template-columns: minmax(0, 1fr) auto; margin-bottom: 18px; }
+    .account-note { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+    .account-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(100%, 420px); margin: 0 auto 16px; }
+    .make-account-button { grid-column: 1 / -1; justify-self: center; }
+    .account-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .player-note { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+    .player-form { grid-template-columns: minmax(0, 1fr) auto; align-items: end; margin-bottom: 18px; }
+    .player-form textarea { width: 100%; min-height: 82px; padding: 9px 10px; border: 1px solid #34545a; border-radius: 3px; color: var(--ink); background: #091519; font: inherit; resize: vertical; }
+    .player-form textarea:focus { outline: 2px solid var(--red); outline-offset: 2px; }
+    .player-actions { display: flex; flex-direction: column; gap: 8px; }
+    .player-row { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .featured-avatar { max-width: 520px; padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+    .featured-avatar .item-id { overflow-wrap: anywhere; margin: 8px 0 14px; }
+    .module-note { margin: 0 0 14px; color: var(--muted); font-size: 12px; }
+    .module-uploader { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .module-picker { display: inline-block; cursor: pointer; }
+    .module-file-input { display: none; }
+    .module-list { display: grid; gap: 7px; max-height: 210px; overflow-y: auto; margin: 14px 0; }
+    .module-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px; border-bottom: 1px solid var(--line); background: #0c2026; }
+    .module-name { overflow-wrap: anywhere; font-weight: 650; }
+    .module-size { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .module-preview { display: block; width: 100%; height: min(42vh, 420px); min-height: 180px; border: 1px solid var(--line); background: white; }
+    .module-preview[hidden] { display: none; }
+
+    ::selection { color: white; background: var(--red-dark); }
+
+    @media (max-width: 680px) {
+      main { width: min(100% - 24px, 560px); margin: 24px auto; }
+      header { padding: 14px 16px; }
+      .intro { align-items: start; flex-direction: column; gap: 8px; }
+      h1 { font-size: 29px; }
+      .workspace { grid-template-columns: 1fr; }
+      nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 10px; border-right: 0; border-bottom: 1px solid var(--line); }
+      nav button { text-align: center; }
+      .content { padding: 17px 14px; }
+      .section-heading { align-items: flex-start; }
+      .section-actions { align-items: flex-end; flex-direction: column-reverse; gap: 6px; }
+      .avatar-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      form { grid-template-columns: 1fr; }
+      .avatar-search { grid-template-columns: minmax(0, 1fr) auto; }
+      .avatar-search input { grid-column: 1 / -1; }
+      .world-search { grid-template-columns: 1fr; }
+      .item { grid-template-columns: minmax(0, 1fr) auto; }
+      .remove-button { grid-column: 2; }
+      .header-actions { gap: 8px; }
+    }
+
+    @media (max-width: 480px) {
+      .local-note { display: none; }
+      .avatar-results { grid-template-columns: 1fr; }
+    }
+
+    :root {
+      --ink: #e9f8fa;
+      --muted: #91afb5;
+      --line: #24434a;
+      --paper: #0e1b20;
+      --ground: #080f13;
+      --red: #33d4e5;
+      --red-dark: #159eaf;
+      --surface: #10232a;
+    }
+
+    body {
+      background:
+        repeating-linear-gradient(0deg, #c9f8ff04 0 1px, transparent 1px 42px),
+        repeating-linear-gradient(90deg, #c9f8ff04 0 1px, transparent 1px 42px),
+        linear-gradient(145deg, #0d2028, var(--ground) 46%, #11181c);
+      font: 14px/1.4 "Segoe UI", system-ui, sans-serif;
+    }
+
+    header {
+      min-height: 54px;
+      padding: 8px max(16px, calc((100vw - 1200px) / 2));
+      border-bottom-color: #1d4149;
+      background: #0b151aeF;
+      box-shadow: inset 0 2px var(--red), 0 8px 22px #0007;
+    }
+
+    .brand::before { border-radius: 1px; box-shadow: 0 0 10px #33d4e577; }
+    .local-note { color: #71dce7; font-size: 11px; font-weight: 700; }
+
+    .login-link {
+      min-height: 32px;
+      border-color: #2b8390;
+      color: #baf7fb;
+      background: #12333a;
+      font-size: 12px;
+    }
+
+    .login-link:hover { border-color: var(--red); background: #17434b; }
+
+    main { width: min(1220px, calc(100% - 32px)); margin: 22px auto; }
+    .intro { align-items: center; margin-bottom: 12px; }
+    h1 { font: 700 22px/1.2 "Segoe UI", system-ui, sans-serif; }
+    .intro p { margin-top: 3px; font-size: 12px; }
+    .count { padding: 6px 9px; border-color: #27505a; color: #91e8ef; background: #0c2026; }
+
+    .workspace {
+      grid-template-columns: 158px minmax(0, 1fr) 168px;
+      min-height: 570px;
+      border-color: #24515b;
+      border-radius: 5px;
+      background: #0d191e;
+      box-shadow: 0 18px 48px #0009, inset 0 0 0 1px #ffffff04;
+    }
+
+    nav { padding: 14px 9px; border-right-color: var(--line); background: #0a1418; }
+    nav button {
+      margin: 3px 0;
+      padding: 10px 9px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+
+    nav button[aria-selected="true"] {
+      border-color: #24616b;
+      color: #d7fbff;
+      background: linear-gradient(90deg, #12363e, #10282f);
+      box-shadow: inset 2px 0 var(--red), 0 0 14px #1bc7d21a;
+    }
+
+    nav button[aria-selected="false"]:hover { color: var(--ink); background: #142329; }
+    .content { padding: 19px; }
+    h2 { font-size: 16px; }
+    .section-heading span { font-size: 11px; }
+
+    .browser-link {
+      border-color: #2b6872;
+      border-radius: 3px;
+      color: #91eaf1;
+      background: #102a30;
+    }
+
+    .browser-link:hover { border-color: var(--red); background: #143941; }
+    .avatar-browser, .world-browser { border-top-color: #24434a; }
+    .avatar-card { border-color: #29444a; background: #102128; }
+    .avatar-preview { background: #091317; }
+    .avatar-open, .open-link { border-color: #2c6771; color: #9debf1; background: #102b31; }
+    .avatar-open:hover, .open-link:hover { border-color: var(--red); background: #153a42; }
+
+    form {
+      border-color: #25464e;
+      border-radius: 3px;
+      background: #0e2026;
+    }
+
+    input {
+      border-color: #34545a;
+      border-radius: 3px;
+      background: #091519;
+    }
+
+    input:focus, button:focus-visible, a:focus-visible { outline-color: var(--red); }
+
+    button, .open-link {
+      border-color: #294c54;
+      border-radius: 3px;
+      background: #13272d;
+    }
+
+    button:hover { border-color: #357681; background: #18343b; }
+    .add-button, .save-avatar { border-color: #24b8c8; color: #061316; background: #43d5e2; }
+    .add-button:hover, .save-avatar:hover { border-color: #7aebf2; background: #7aebf2; }
+    .save-avatar:disabled { border-color: #29444a; color: var(--muted); background: #17272b; }
+    .items { border-top-color: #24434a; }
+    .item { border-bottom-color: #24434a; }
+    .remove-button { color: #f08a8f; }
+    .empty { color: #8ba9af; }
+    .account-note { color: #8eaeb4; }
+
+    .quick-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      padding: 15px 10px;
+      border-left: 1px solid var(--line);
+      background: #0a1519;
+    }
+
+    .quick-rail h3 {
+      margin: 0 0 5px;
+      color: #7fdce5;
+      font-size: 10px;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    .rail-link {
+      display: flex;
+      align-items: center;
+      min-height: 37px;
+      padding: 7px 8px;
+      border: 1px solid #1d3d44;
+      border-radius: 3px;
+      color: #d8f6f8;
+      background: #102128;
+      font-size: 11px;
+      text-decoration: none;
+    }
+
+    .rail-link:hover { border-color: #33838e; background: #153139; }
+    .rail-note { margin-top: auto; padding-top: 10px; border-top: 1px solid #1d3d44; color: #699098; font-size: 10px; }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 138px minmax(0, 1fr); }
+      .quick-rail { display: none; }
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      height: 100dvh;
+      min-height: 0;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header { position: relative; z-index: 1; flex: 0 0 54px; }
+    .brand { font-weight: 900; text-shadow: 0 0 8px #61edf5, 0 0 18px #25c6d855; }
+    .brand::before { box-shadow: 0 0 8px var(--red), 0 0 17px #33d4e5aa; }
+
+    main {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      width: min(1220px, calc(100% - 32px));
+      height: calc(100dvh - 54px);
+      min-height: 0;
+      flex: 1 1 auto;
+      flex-direction: column;
+      margin: 0 auto;
+      padding: 12px 0;
+    }
+
+    .intro { flex: 0 0 auto; margin-bottom: 10px; }
+    .workspace { min-height: 0; flex: 1 1 auto; }
+    .content, nav, .quick-rail { min-height: 0; overflow-y: auto; }
+
+    .snowfall {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .snowfall::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: clamp(36px, 6vh, 64px);
+      background: linear-gradient(180deg, #ddfbff 0%, #c1e9ed 48%, #9acbd0 100%);
+      clip-path: polygon(0 42%, 7% 32%, 13% 48%, 20% 27%, 28% 46%, 36% 35%, 44% 51%, 53% 29%, 61% 45%, 70% 31%, 78% 50%, 86% 34%, 94% 46%, 100% 35%, 100% 100%, 0 100%);
+      box-shadow: 0 -4px 12px #c9f8ff66;
+      content: "";
+      opacity: 0.78;
+    }
+
+    .snowflake {
+      position: absolute;
+      top: -8vh;
+      left: var(--left);
+      color: #d7fbff;
+      font-size: var(--size);
+      line-height: 1;
+      opacity: 0.62;
+      text-shadow: 0 0 8px #61edf5;
+      animation: snowfall-drift var(--duration) linear var(--delay) infinite;
+    }
+
+    .flake-a { --left: 2%; --size: 18px; --duration: 17s; --delay: -8s; --rest-top: 12vh; }
+    .flake-b { --left: 4%; --size: 14px; --duration: 24s; --delay: -17s; --rest-top: 68vh; }
+    .flake-c { --left: 6%; --size: 23px; --duration: 20s; --delay: -5s; --rest-top: 31vh; }
+    .flake-d { --left: 1%; --size: 16px; --duration: 27s; --delay: -20s; --rest-top: 82vh; }
+    .flake-e { --left: 5%; --size: 20px; --duration: 19s; --delay: -11s; --rest-top: 48vh; }
+    .flake-f { --left: 3%; --size: 12px; --duration: 25s; --delay: -3s; --rest-top: 19vh; }
+    .flake-g { --left: 94%; --size: 22px; --duration: 22s; --delay: -15s; --rest-top: 73vh; }
+    .flake-h { --left: 96%; --size: 15px; --duration: 18s; --delay: -6s; --rest-top: 40vh; }
+    .flake-i { --left: 98%; --size: 20px; --duration: 28s; --delay: -22s; --rest-top: 9vh; }
+    .flake-j { --left: 92%; --size: 14px; --duration: 21s; --delay: -12s; --rest-top: 59vh; }
+    .flake-k { --left: 99%; --size: 24px; --duration: 26s; --delay: -18s; --rest-top: 88vh; }
+    .flake-l { --left: 3.5%; --size: 10px; --duration: 23s; --delay: -9s; --rest-top: 5vh; }
+    .flake-m { --left: 5.5%; --size: 19px; --duration: 29s; --delay: -21s; --rest-top: 55vh; }
+    .flake-n { --left: 0.5%; --size: 13px; --duration: 18s; --delay: -2s; --rest-top: 27vh; }
+    .flake-o { --left: 6.5%; --size: 17px; --duration: 31s; --delay: -25s; --rest-top: 91vh; }
+    .flake-p { --left: 2.5%; --size: 22px; --duration: 26s; --delay: -13s; --rest-top: 42vh; }
+    .flake-q { --left: 96.5%; --size: 12px; --duration: 21s; --delay: -7s; --rest-top: 25vh; }
+    .flake-r { --left: 93%; --size: 18px; --duration: 30s; --delay: -24s; --rest-top: 5vh; }
+    .flake-s { --left: 99.5%; --size: 11px; --duration: 19s; --delay: -4s; --rest-top: 54vh; }
+    .flake-t { --left: 91%; --size: 21px; --duration: 27s; --delay: -16s; --rest-top: 80vh; }
+    .flake-u { --left: 97.5%; --size: 16px; --duration: 22s; --delay: -10s; --rest-top: 46vh; }
+    .flake-v { --left: 95%; --size: 25px; --duration: 32s; --delay: -28s; --rest-top: 64vh; }
+
+    .backdrop-tree {
+      position: absolute;
+      bottom: clamp(6px, 1.2vh, 12px);
+      display: block;
+      width: clamp(44px, 5.5vw, 90px);
+      height: clamp(125px, 22vh, 190px);
+      opacity: 0.62;
+      filter: drop-shadow(0 0 8px #48cbaa33);
+    }
+
+    .backdrop-tree--left { left: 3%; }
+    .backdrop-tree--right { right: 3%; transform: scale(0.9); transform-origin: bottom; opacity: 0.48; }
+    .backdrop-tree--far { left: 9%; transform: scale(0.72); transform-origin: bottom; opacity: 0.36; }
+    .tree-canopy {
+      position: absolute;
+      inset: 4% 0 18%;
+      background: linear-gradient(110deg, #123f38, #257256 52%, #104438);
+      clip-path: polygon(50% 0, 37% 23%, 45% 23%, 24% 48%, 37% 48%, 7% 76%, 41% 76%, 41% 100%, 59% 100%, 59% 76%, 93% 76%, 63% 48%, 76% 48%, 55% 23%, 63% 23%);
+    }
+
+    .tree-trunk {
+      position: absolute;
+      bottom: 0;
+      left: 44%;
+      width: 12%;
+      height: 24%;
+      background: #72523b;
+    }
+
+    .tree-light {
+      position: absolute;
+      top: -3%;
+      left: 44%;
+      color: #ffe39a;
+      font-size: 13px;
+      line-height: 1;
+      text-shadow: 0 0 8px #ffdc72;
+    }
+
+    .backdrop-star {
+      position: absolute;
+      top: var(--top);
+      left: var(--left);
+      color: #fff0bf;
+      font-size: var(--size);
+      line-height: 1;
+      opacity: 0.72;
+      text-shadow: 0 0 6px #ffe3a1, 0 0 13px #fff3cc66;
+      animation: star-twinkle var(--duration) ease-in-out var(--delay) infinite alternate;
+    }
+
+    .backdrop-moon {
+      position: absolute;
+      top: 8vh;
+      right: 2%;
+      width: clamp(56px, 7vw, 104px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #ffedc1;
+      box-shadow: 0 0 18px #ffe5ad66, 0 0 44px #ffebc122;
+      opacity: 0.78;
+    }
+
+    .backdrop-cloud {
+      position: absolute;
+      top: var(--top);
+      left: var(--left);
+      width: clamp(100px, 15vw, 210px);
+      height: 48px;
+      border-radius: 50%;
+      background:
+        radial-gradient(ellipse at 22% 64%, #b8dce526 0 31%, transparent 34%),
+        radial-gradient(ellipse at 47% 47%, #b8dce522 0 38%, transparent 41%),
+        radial-gradient(ellipse at 74% 64%, #b8dce51c 0 32%, transparent 35%);
+      filter: blur(2px);
+      opacity: 0.7;
+      animation: cloud-drift var(--duration) ease-in-out var(--delay) infinite alternate;
+    }
+
+    .cloud-a { --left: 1%; --top: 20vh; --duration: 48s; --delay: -17s; }
+    .cloud-b { --left: 7%; --top: 42vh; --duration: 61s; --delay: -31s; transform: scale(0.78); }
+    .cloud-c { --left: 88%; --top: 14vh; --duration: 55s; --delay: -9s; transform: scale(0.92); }
+    .cloud-d { --left: 94%; --top: 32vh; --duration: 58s; --delay: -23s; transform: scale(0.76); }
+
+    .star-a { --left: 1.5%; --top: 12%; --size: 11px; --duration: 2.3s; --delay: -0.5s; }
+    .star-b { --left: 4.5%; --top: 29%; --size: 8px; --duration: 3.1s; --delay: -1.7s; }
+    .star-c { --left: 2.5%; --top: 62%; --size: 10px; --duration: 2.8s; --delay: -1.2s; }
+    .star-d { --left: 6%; --top: 83%; --size: 7px; --duration: 3.6s; --delay: -2.4s; }
+    .star-e { --left: 98%; --top: 17%; --size: 9px; --duration: 2.6s; --delay: -1.3s; }
+    .star-f { --left: 96%; --top: 36%; --size: 12px; --duration: 3.3s; --delay: -0.8s; }
+    .star-g { --left: 99%; --top: 68%; --size: 8px; --duration: 2.5s; --delay: -2s; }
+    .star-h { --left: 94%; --top: 87%; --size: 10px; --duration: 3.8s; --delay: -1s; }
+    .star-i { --left: 0.5%; --top: 44%; --size: 9px; --duration: 2.9s; --delay: -1.4s; }
+    .star-j { --left: 7%; --top: 6%; --size: 8px; --duration: 3.4s; --delay: -0.9s; }
+    .star-k { --left: 3.5%; --top: 74%; --size: 12px; --duration: 2.7s; --delay: -2.1s; }
+    .star-l { --left: 11%; --top: 19%; --size: 7px; --duration: 3.7s; --delay: -2.7s; }
+    .star-m { --left: 99.2%; --top: 51%; --size: 11px; --duration: 2.4s; --delay: -0.6s; }
+    .star-n { --left: 92%; --top: 7%; --size: 8px; --duration: 3.2s; --delay: -1.8s; }
+    .star-o { --left: 97%; --top: 77%; --size: 13px; --duration: 2.8s; --delay: -1.1s; }
+    .star-p { --left: 89%; --top: 23%; --size: 7px; --duration: 3.5s; --delay: -2.3s; }
+
+    @keyframes star-twinkle {
+      from { opacity: 0.3; transform: scale(0.82); }
+      to { opacity: 0.95; transform: scale(1.12); }
+    }
+
+    @keyframes cloud-drift {
+      from { translate: -5px 0; }
+      to { translate: 16px 3px; }
+    }
+
+    @keyframes snowfall-drift {
+      from { transform: translate3d(-1vw, -4vh, 0) rotate(0deg); }
+      to { transform: translate3d(4vw, 112vh, 0) rotate(240deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .snowflake { top: var(--rest-top); animation: none; }
+      .backdrop-star { animation: none; opacity: 0.72; }
+      .backdrop-cloud { animation: none; }
+    }
+
+    @media (max-width: 680px) {
+      main { width: calc(100% - 20px); margin: 14px auto; }
+      header { padding: 8px 12px; }
+      .workspace { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+      nav { grid-row: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-right: 0; border-bottom: 1px solid var(--line); }
+      nav button { text-align: center; }
+      .content { padding: 15px 12px; }
+      .quick-rail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 0; }
+      .quick-rail h3, .rail-note { grid-column: 1 / -1; }
+      .rail-note { margin-top: 0; }
+      .account-form { grid-template-columns: minmax(0, 1fr) auto; }
+    }
+
+    @media (max-width: 480px) {
+      .local-note { display: none; }
+      .quick-rail { grid-template-columns: 1fr; }
+      .quick-rail h3, .rail-note { grid-column: auto; }
+      .account-form { grid-template-columns: 1fr; }
+      .module-row { grid-template-columns: minmax(0, 1fr) auto; }
+      .module-row .remove-button { grid-column: 2; }
+      .module-preview { height: 48vh; min-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">CurryClient</div>
+    <div class="header-actions">
+      <div class="local-note">Saved in this browser</div>
+      <a class="login-link" href="https://vrchat.com/home/login" target="_blank" rel="noopener noreferrer">Log in to VRChat</a>
+    </div>
+  </header>
+  <div class="snowfall" aria-hidden="true">
+    <span class="backdrop-moon"></span>
+    <span class="backdrop-cloud cloud-a"></span>
+    <span class="backdrop-cloud cloud-b"></span>
+    <span class="backdrop-cloud cloud-c"></span>
+    <span class="backdrop-cloud cloud-d"></span>
+    <span class="snowflake flake-a">❄</span><span class="snowflake flake-b">❅</span>
+    <span class="snowflake flake-c">❆</span><span class="snowflake flake-d">❄</span>
+    <span class="snowflake flake-e">❅</span><span class="snowflake flake-f">❆</span>
+    <span class="snowflake flake-g">❄</span><span class="snowflake flake-h">❅</span>
+    <span class="snowflake flake-i">❆</span><span class="snowflake flake-j">❄</span>
+    <span class="snowflake flake-k">❅</span><span class="snowflake flake-l">❆</span>
+    <span class="snowflake flake-m">❄</span><span class="snowflake flake-n">❅</span>
+    <span class="snowflake flake-o">❆</span><span class="snowflake flake-p">❄</span>
+    <span class="snowflake flake-q">❅</span><span class="snowflake flake-r">❆</span>
+    <span class="snowflake flake-s">❄</span><span class="snowflake flake-t">❅</span>
+    <span class="snowflake flake-u">❆</span><span class="snowflake flake-v">❄</span>
+    <span class="backdrop-tree backdrop-tree--left"><span class="tree-canopy"></span><span class="tree-trunk"></span><span class="tree-light">✦</span></span>
+    <span class="backdrop-tree backdrop-tree--right"><span class="tree-canopy"></span><span class="tree-trunk"></span><span class="tree-light">✦</span></span>
+    <span class="backdrop-tree backdrop-tree--far"><span class="tree-canopy"></span><span class="tree-trunk"></span><span class="tree-light">✦</span></span>
+    <span class="backdrop-star star-a">✦</span><span class="backdrop-star star-b">✧</span>
+    <span class="backdrop-star star-c">✧</span><span class="backdrop-star star-d">✦</span>
+    <span class="backdrop-star star-e">✧</span><span class="backdrop-star star-f">✦</span>
+    <span class="backdrop-star star-g">✦</span><span class="backdrop-star star-h">✧</span>
+    <span class="backdrop-star star-i">✧</span><span class="backdrop-star star-j">✦</span>
+    <span class="backdrop-star star-k">✦</span><span class="backdrop-star star-l">✧</span>
+    <span class="backdrop-star star-m">✧</span><span class="backdrop-star star-n">✦</span>
+    <span class="backdrop-star star-o">✧</span><span class="backdrop-star star-p">✦</span>
+  </div>
+
+  <main>
+    <div class="intro">
+      <div>
+        <h1>Launch Pad</h1>
+        <p>VRChat workspace</p>
+      </div>
+      <div class="count" id="total-count"></div>
+    </div>
+
+    <div class="workspace">
+      <nav aria-label="CurryClient views" role="tablist">
+        <button type="button" role="tab" data-view="avatar-browser" aria-selected="true">Avatar Browser</button>
+        <button type="button" role="tab" data-view="vrcmods" aria-selected="false">VRCMods</button>
+        <button type="button" role="tab" data-view="modules" aria-selected="false">HTML Modules</button>
+        <button type="button" role="tab" data-view="world-browser" aria-selected="false">World Browser</button>
+        <button type="button" role="tab" data-view="saved-avatars" aria-selected="false">Saved Avatars</button>
+        <button type="button" role="tab" data-view="saved-worlds" aria-selected="false">Saved Worlds</button>
+        <button type="button" role="tab" data-view="crash-avatar" aria-selected="false">Crash</button>
+        <button type="button" role="tab" data-view="players" aria-selected="false">Player Tracker</button>
+        <button type="button" role="tab" data-view="accounts" aria-selected="false">Accounts</button>
+      </nav>
+
+      <section class="content">
+        <div class="section-heading">
+          <h2 id="section-title">Avatar Browser</h2>
+          <div class="section-actions">
+            <span id="section-count"></span>
+            <a class="browser-link" id="browser-link" href="https://avtrdb.com/browse?page_size=14" target="_blank" rel="noopener noreferrer">Open AVTRDB</a>
+          </div>
+        </div>
+
+        <section class="avatar-browser" id="avatar-browser" aria-labelledby="avatar-browser-title">
+          <div class="browser-title-row">
+            <h3 id="avatar-browser-title">Discover avatars</h3>
+            <a class="browser-credit" href="https://avtrdb.com/browse?page_size=14" target="_blank" rel="noopener noreferrer">Avatar catalog by AVTRDB</a>
+          </div>
+          <form class="avatar-search" id="avatar-search-form">
+            <input id="avatar-query" type="search" aria-label="Search avatar catalog" placeholder="Search avatars by name or tags">
+            <button class="add-button" type="submit">Search</button>
+            <button class="shuffle-button" id="shuffle-avatars" type="button">Shuffle</button>
+          </form>
+          <p class="avatar-status" id="avatar-status" role="status">Loading avatars...</p>\n          <p class="module-note">Avatar Browser searches AVTRDB only. VRCMods has its own separate search tab.</p>
+          <div class="avatar-results" id="avatar-results"></div>
+          <button class="load-more" id="load-more" type="button" hidden>Load more</button>
+        </section>
+
+        <section class="world-browser" id="world-browser" hidden aria-labelledby="world-browser-title">
+          <div class="browser-title-row">
+            <h3 id="world-browser-title">Find worlds</h3>
+            <a class="browser-credit" href="https://vrclist.com/" target="_blank" rel="noopener noreferrer">VRClist</a>
+          </div>
+          <p>Search public worlds by tags. Results open on VRClist.</p>
+          <form class="world-search" id="world-search-form">
+            <div>
+              <label for="world-tags">World tags</label>
+              <input id="world-tags" value="OCEANView" placeholder="e.g. ocean, chill">
+            </div>
+            <button class="add-button" type="submit">Search worlds</button>
+          </form>
+        </section>
+
+        <section id="vrcmods-view" hidden aria-label="VRCMods avatar downloads">
+          <article class="featured-avatar">
+            <h3>Avatar Downloads on VRCMods</h3>
+            <p class="player-note">Search community avatar listings. Review each creator’s terms and use VRCMods’ own item-page download controls.</p>
+            <form class="world-search" id="vrcmods-search-form">
+              <div>
+                <label for="vrcmods-query">Search avatar listings</label>
+                <input id="vrcmods-query" type="search" placeholder="Avatar name or keyword">
+              </div>
+              <button class="add-button" type="submit">Search VRCMods</button>
+            </form>
+            <p><a class="browser-link" href="https://vrcmods.com/search?sort=hot&amp;cid=1&amp;page=1" target="_blank" rel="noopener noreferrer">Browse all VRChat avatars</a></p>
+          </article>
+        </section>
+
+        <section id="modules-view" hidden aria-label="HTML modules">
+          <article class="featured-avatar">
+            <h3>HTML Modules</h3>
+            <p class="module-note">Select .html or .htm files only, up to 5 MB each. Files stay in this browser session; sandboxed previews have scripts disabled.</p>
+            <div class="module-uploader">
+              <label class="browser-link module-picker" for="module-files">Choose HTML files</label>
+              <input class="module-file-input" id="module-files" type="file" accept=".html,.htm,text/html" multiple>
+              <span class="module-note" id="module-status" role="status">No files selected.</span>
+            </div>
+            <div class="module-list" id="module-list"></div>
+            <iframe class="module-preview" id="module-preview" title="Sandboxed HTML module preview" sandbox="" referrerpolicy="no-referrer" hidden></iframe>
+          </article>
+        </section>
+
+        <section id="crash-avatar-view" hidden aria-label="Crash avatar">
+          <article class="featured-avatar">
+            <h3>Crash</h3>
+            <p class="player-note">Avatar shortcut. Opens the official VRChat avatar page.</p>
+            <span class="item-id">avtr_a18a95a4-8e89-4d2e-84a0-10b8b791e91b</span>
+            <div class="avatar-card-actions">
+              <a class="avatar-open" href="https://vrchat.com/home/avatar/avtr_a18a95a4-8e89-4d2e-84a0-10b8b791e91b" target="_blank" rel="noopener noreferrer">Open in VRChat</a>
+            </div>
+          </article>
+          <section class="featured-avatar" aria-label="Other avatars">
+            <h3>Other Avatars</h3>
+            <div class="avatar-card-actions">
+              <a class="browser-link" href="https://drive.google.com/drive/folders/1E0l3BhxR5E1z7qIKxpNy4z8-hGT4A0zO" target="_blank" rel="noopener noreferrer">Other avatars folder</a>
+              <a class="browser-link" href="https://drive.google.com/file/d/1nvD7tqMefIut1bEVQhWV8jN9D82cRqDz/view" target="_blank" rel="noopener noreferrer">Other avatar file</a>
+            </div>
+          </section>
+        </section>
+
+        <section id="saved-view" hidden aria-label="Saved picks">
+          <form id="add-form">
+            <div>
+              <label for="name-input">Name</label>
+              <input id="name-input" maxlength="80" placeholder="Favorite avatar or world">
+            </div>
+            <div>
+              <label for="id-input">VRChat ID or page URL</label>
+              <input id="id-input" maxlength="300" required placeholder="avtr_... or wrld_...">
+            </div>
+            <button class="add-button" type="submit">Add pick</button>
+          </form>
+
+          <div class="list-head">
+            <label for="search-input">Saved picks</label>
+            <input class="search" id="search-input" type="search" placeholder="Filter this list">
+          </div>
+
+          <div class="items" id="items"></div>
+          <p class="message" id="message" role="status"></p>
+        </section>
+
+        <section id="player-view" hidden aria-label="Player tracker">
+          <p class="player-note">Saved VRChat profile links only. This does not track presence or activity.</p>
+          <form class="player-form" id="player-form">
+            <div>
+              <label for="player-links">Paste VRChat account links</label>
+              <textarea id="player-links" required placeholder="https://vrchat.com/home/user/usr_... (one per line)"></textarea>
+            </div>
+            <div class="player-actions">
+              <button class="add-button" type="submit">Add to list</button>
+              <button type="button" id="choose-player-import">Import list</button>
+              <input id="player-import" type="file" accept=".txt,.json,text/plain,application/json" hidden>
+            </div>
+          </form>
+          <div class="items" id="player-items"></div>
+          <p class="message" id="player-message" role="status"></p>
+        </section>
+
+        <section id="account-view" hidden aria-label="Account manager">
+          <p class="account-note">Use the local browser profile name as the shortcut name. CurryClient stores only that name and never reads profile files, cookies, or passwords. HTML cannot force a specific browser profile, so shortcuts open VRChat in the current profile.</p>
+          <form class="account-form" id="account-form">
+            <div>
+              <label for="account-label">Browser profile name</label>
+              <input id="account-label" maxlength="40" required placeholder="Default, Profile 1, Work">
+            </div>
+            <button class="add-button" type="submit">Add profile shortcut</button>
+          </form>
+          <div class="account-tools">
+            <a class="browser-link make-account-button" href="https://vrchat.com/home/register" target="_blank" rel="noopener noreferrer">Make account</a>
+            <button type="button" id="export-accounts">Export labels</button>
+            <button type="button" id="choose-account-import">Import labels</button>
+            <input id="account-import" type="file" accept=".json,application/json" hidden>
+          </div>
+          <p class="account-note">Make account opens VRChat signup in a new tab using your current browser profile. Choose a different profile in your browser first if you need a separate session.</p>
+          <div class="items" id="account-items"></div>
+          <p class="message" id="account-message" role="status"></p>
+        </section>
+      </section>
+
+      <aside class="quick-rail" aria-label="Quick links">
+        <h3>Quick Links</h3>
+        <a class="rail-link" href="https://vrchat.com/home/login" target="_blank" rel="noopener noreferrer">VRChat Login</a>
+        <a class="rail-link" href="https://avtrdb.com/browse?page_size=14" target="_blank" rel="noopener noreferrer">Avatar Catalog</a>
+        <a class="rail-link" href="https://vrclist.com/?type=search&amp;sort=recent&amp;tags=OCEANView" target="_blank" rel="noopener noreferrer">World Search</a>
+        <div class="rail-note">LOCAL APP · BROWSER-BASED SIGN IN</div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const storageKey = "vrchat-picks-v1";
+      const accountStorageKey = "curryclient-account-labels-v1";
+      const playerStorageKey = "curryclient-player-tracker-v1";
+      const patterns = {
+        avatar: /^avtr_[A-Za-z0-9_-]+$/,
+        world: /^wrld_[A-Za-z0-9_-]+$/,
+        player: /^usr_[A-Za-z0-9_-]+$/,
+      };
+
+      let activeView = "avatar-browser";
+      let picks = loadPicks();
+      let accounts = loadAccounts();
+      let players = loadPlayers();
+      let avatarResults = [];
+      let avatarQuery = "";
+      let avatarPage = 0;
+      let avatarHasMore = false;
+      let avatarLoading = false;
+      let htmlModules = [];
+      let activeModuleId = null;
+
+      const list = document.querySelector("#items");
+      const message = document.querySelector("#message");
+      const search = document.querySelector("#search-input");
+      const avatarBrowser = document.querySelector("#avatar-browser");
+      const worldBrowser = document.querySelector("#world-browser");
+      const vrcModsView = document.querySelector("#vrcmods-view");
+      const modulesView = document.querySelector("#modules-view");
+      const moduleInput = document.querySelector("#module-files");
+      const moduleList = document.querySelector("#module-list");
+      const moduleStatus = document.querySelector("#module-status");
+      const modulePreview = document.querySelector("#module-preview");
+      const crashAvatarView = document.querySelector("#crash-avatar-view");
+      const savedView = document.querySelector("#saved-view");
+      const playerView = document.querySelector("#player-view");
+      const playerItems = document.querySelector("#player-items");
+      const playerMessage = document.querySelector("#player-message");
+      const accountView = document.querySelector("#account-view");
+      const accountItems = document.querySelector("#account-items");
+      const accountMessage = document.querySelector("#account-message");
+      const avatarResultsElement = document.querySelector("#avatar-results");
+      const avatarStatus = document.querySelector("#avatar-status");
+      const loadMoreButton = document.querySelector("#load-more");
+
+      function loadPicks() {
+        try {
+          const value = JSON.parse(localStorage.getItem(storageKey) || "{}");
+          return {
+            avatar: Array.isArray(value.avatar) ? value.avatar : [],
+            world: Array.isArray(value.world) ? value.world : [],
+          };
+        } catch {
+          return { avatar: [], world: [] };
+        }
+      }
+
+      function loadAccounts() {
+        try {
+          const value = JSON.parse(localStorage.getItem(accountStorageKey) || "[]");
+          return Array.isArray(value)
+            ? value.filter((label) => typeof label === "string").slice(0, 50)
+            : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function loadPlayers() {
+        try {
+          const value = JSON.parse(localStorage.getItem(playerStorageKey) || "[]");
+          return Array.isArray(value)
+            ? value.filter((id) => typeof id === "string" && patterns.player.test(id)).slice(0, 200)
+            : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function persistPlayers(successMessage = "Player list saved locally.") {
+        try {
+          localStorage.setItem(playerStorageKey, JSON.stringify(players));
+          playerMessage.textContent = successMessage;
+        } catch {
+          playerMessage.textContent = "Browser storage is unavailable; changes may not persist.";
+        }
+      }
+
+      function parsePlayerId(value) {
+        const input = value.trim();
+
+        try {
+          const url = new URL(input);
+          if (url.protocol !== "https:" || (url.hostname !== "vrchat.com" && url.hostname !== "www.vrchat.com")) return null;
+          const match = url.pathname.match(/^\/home\/users?\/(usr_[A-Za-z0-9_-]+)\/?$/);
+          return match ? match[1] : null;
+        } catch {
+          return null;
+        }
+      }
+
+      function addPlayerValues(values) {
+        const inputs = values.filter((value) => typeof value === "string" && value.trim());
+        const validIds = [...new Set(inputs.map(parsePlayerId).filter(Boolean))];
+        const newIds = validIds.filter((id) => !players.includes(id));
+
+        if (newIds.length === 0) {
+          playerMessage.textContent = values.length
+            ? "No new valid VRChat profile links found."
+            : "Paste one or more HTTPS VRChat account links.";
+          return false;
+        }
+        if (players.length + newIds.length > 200) {
+          playerMessage.textContent = "The player list limit is 200 profiles.";
+          return false;
+        }
+
+        players = [...players, ...newIds];
+        const skipped = values.length - newIds.length;
+        persistPlayers(`Added ${newIds.length}; skipped ${skipped} invalid or duplicate link${skipped === 1 ? "" : "s"}.`);
+        render();
+        return true;
+      }
+
+      function renderPlayers() {
+        playerItems.replaceChildren();
+        if (players.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No player links saved.";
+          playerItems.appendChild(empty);
+          return;
+        }
+
+        for (const id of players) {
+          const row = document.createElement("div");
+          row.className = "item player-row";
+          const details = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "item-name";
+          name.textContent = id;
+          const description = document.createElement("span");
+          description.className = "item-id";
+          description.textContent = "VRChat user profile";
+          details.append(name, description);
+
+          const open = document.createElement("a");
+          open.className = "open-link";
+          open.href = `https://vrchat.com/home/user/${encodeURIComponent(id)}`;
+          open.target = "_blank";
+          open.rel = "noopener noreferrer";
+          open.textContent = "Open profile";
+
+          const remove = document.createElement("button");
+          remove.className = "remove-button";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", `Remove ${id} from player list`);
+          remove.addEventListener("click", () => {
+            players = players.filter((entry) => entry !== id);
+            persistPlayers();
+            renderPlayers();
+            document.querySelector("#section-count").textContent = `${players.length} saved`;
+            document.querySelector("#total-count").textContent = `${players.length} saved player links`;
+          });
+
+          row.append(details, open, remove);
+          playerItems.appendChild(row);
+        }
+      }
+
+      function renderModules() {
+        moduleList.replaceChildren();
+
+        if (htmlModules.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No HTML modules loaded yet. Choose an .html or .htm file to get started.";
+          moduleList.appendChild(empty);
+        }
+
+        for (const module of htmlModules) {
+          const row = document.createElement("div");
+          row.className = "module-row";
+
+          const details = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "module-name";
+          name.textContent = module.file.name;
+          const size = document.createElement("span");
+          size.className = "module-size";
+          size.textContent = `${(module.file.size / 1024).toFixed(1)} KB · HTML`;
+          details.append(name, size);
+
+          const previewButton = document.createElement("button");
+          previewButton.type = "button";
+          previewButton.textContent = activeModuleId === module.id ? "Previewing" : "Preview";
+          previewButton.addEventListener("click", () => {
+            activeModuleId = module.id;
+            renderModules();
+          });
+
+          const removeButton = document.createElement("button");
+          removeButton.className = "remove-button";
+          removeButton.type = "button";
+          removeButton.textContent = "Remove";
+          removeButton.setAttribute("aria-label", `Remove ${module.file.name}`);
+          removeButton.addEventListener("click", () => {
+            URL.revokeObjectURL(module.url);
+            htmlModules = htmlModules.filter((entry) => entry.id !== module.id);
+            if (activeModuleId === module.id) {
+              activeModuleId = null;
+              modulePreview.removeAttribute("src");
+              delete modulePreview.dataset.moduleId;
+              modulePreview.hidden = true;
+            }
+            renderModules();
+            moduleStatus.textContent = `${htmlModules.length} HTML file${htmlModules.length === 1 ? "" : "s"} in this session.`;
+          });
+
+          row.append(details, previewButton, removeButton);
+          moduleList.appendChild(row);
+        }
+
+        const activeModule = htmlModules.find((module) => module.id === activeModuleId);
+        if (activeModule) {
+          if (modulePreview.dataset.moduleId !== activeModule.id) {
+            modulePreview.src = activeModule.url;
+            modulePreview.dataset.moduleId = activeModule.id;
+          }
+          modulePreview.title = `Sandboxed preview: ${activeModule.file.name}`;
+          modulePreview.hidden = false;
+        } else {
+          modulePreview.removeAttribute("src");
+          delete modulePreview.dataset.moduleId;
+          modulePreview.hidden = true;
+        }
+      }
+
+      function addHtmlModules(files) {
+        let added = 0;
+        let rejected = 0;
+        for (const file of files) {
+          const isHtmlExtension = /\.(html|htm)$/i.test(file.name);
+          const mime = file.type.toLowerCase().split(";")[0];
+          const isHtmlType = !mime || mime === "text/html";
+          const isDuplicate = htmlModules.some((module) =>
+            module.file.name === file.name && module.file.size === file.size && module.file.lastModified === file.lastModified
+          );
+
+          if (!isHtmlExtension || !isHtmlType || file.size > 5 * 1024 * 1024 || htmlModules.length >= 20 || isDuplicate) {
+            rejected += 1;
+            continue;
+          }
+
+          const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+          const url = URL.createObjectURL(file);
+          htmlModules.push({ id, file, url });
+          if (!activeModuleId) activeModuleId = id;
+          added += 1;
+        }
+
+        renderModules();
+        moduleStatus.textContent = `Added ${added}; rejected ${rejected}. ${htmlModules.length} of 20 files in this session.`;
+      }
+
+      function persistAccounts(successMessage = "Account labels updated locally.") {
+        try {
+          localStorage.setItem(accountStorageKey, JSON.stringify(accounts));
+          accountMessage.textContent = successMessage;
+          return true;
+        } catch {
+          accountMessage.textContent = "Browser storage is unavailable; changes may not persist.";
+          return false;
+        }
+      }
+
+      function renderAccounts() {
+        accountItems.replaceChildren();
+        if (accounts.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No account shortcuts yet.";
+          accountItems.appendChild(empty);
+          return;
+        }
+
+        for (const label of accounts) {
+          const row = document.createElement("div");
+          row.className = "item account-row";
+          const details = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "item-name";
+          name.textContent = label;
+          const note = document.createElement("span");
+          note.className = "item-id";
+          note.textContent = "Sign in through VRChat";
+          details.append(name, note);
+
+          const login = document.createElement("a");
+          login.className = "open-link";
+          login.href = "https://vrchat.com/home/login";
+          login.target = "_blank";
+          login.rel = "noopener noreferrer";
+          login.textContent = "Open login";
+
+          const remove = document.createElement("button");
+          remove.className = "remove-button";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", `Remove ${label} account shortcut`);
+          remove.addEventListener("click", () => {
+            accounts = accounts.filter((entry) => entry !== label);
+            persistAccounts();
+            render();
+          });
+
+          row.append(details, login, remove);
+          accountItems.appendChild(row);
+        }
+      }
+
+      function persist() {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(picks));
+          message.textContent = "Saved locally.";
+        } catch {
+          message.textContent = "Browser storage is unavailable; changes may not persist.";
+        }
+      }
+
+      function getId(value, kind) {
+        const input = value.trim();
+
+        if (input.startsWith("http://") || input.startsWith("https://")) {
+          try {
+            const url = new URL(input);
+            if (url.hostname !== "vrchat.com" && url.hostname !== "www.vrchat.com") return null;
+            const section = kind === "avatar" ? "(?:avatars|avatar)" : "(?:worlds|world)";
+            const match = url.pathname.match(new RegExp(`/home/${section}/([^/]+)`));
+            return match ? decodeURIComponent(match[1]) : null;
+          } catch {
+            return null;
+          }
+        }
+
+        return input;
+      }
+
+      function pageUrl(kind, id) {
+        const section = kind === "avatar" ? "avatar" : "world";
+        return `https://vrchat.com/home/${section}/${encodeURIComponent(id)}`;
+      }
+
+      function renderAvatarResults() {
+        avatarResultsElement.replaceChildren();
+
+        for (const avatar of avatarResults) {
+          const card = document.createElement("article");
+          card.className = "avatar-card";
+
+          const preview = document.createElement("div");
+          preview.className = "avatar-preview";
+          if (avatar.image_url) {
+            try {
+              const imageUrl = new URL(avatar.image_url);
+              if (imageUrl.protocol === "https:" && imageUrl.hostname === "thumb.avtrdb.com") {
+                const image = document.createElement("img");
+                image.src = imageUrl.href;
+                image.alt = `${avatar.name || "Avatar"} thumbnail`;
+                image.loading = "lazy";
+                image.referrerPolicy = "no-referrer";
+                preview.appendChild(image);
+              }
+            } catch {}
+          }
+
+          const content = document.createElement("div");
+          content.className = "avatar-card-content";
+          const title = document.createElement("div");
+          title.className = "avatar-card-title";
+          title.textContent = avatar.name || "Untitled avatar";
+          const author = document.createElement("div");
+          author.className = "avatar-card-author";
+          author.textContent = `By ${avatar.author?.name || "Unknown creator"}`;
+          const platforms = document.createElement("div");
+          platforms.className = "avatar-card-platform";
+          platforms.textContent = Array.isArray(avatar.compatibility) && avatar.compatibility.length
+            ? avatar.compatibility.join(" / ").toUpperCase()
+            : "Platform info unavailable";
+
+          const actions = document.createElement("div");
+          actions.className = "avatar-card-actions";
+          const open = document.createElement("a");
+          open.className = "avatar-open";
+          open.href = pageUrl("avatar", avatar.vrc_id);
+          open.target = "_blank";
+          open.rel = "noopener noreferrer";
+          open.textContent = "Open in VRChat";
+
+          const save = document.createElement("button");
+          save.className = "save-avatar";
+          save.type = "button";
+          const alreadySaved = picks.avatar.some((pick) => pick.id === avatar.vrc_id);
+          save.disabled = alreadySaved;
+          save.textContent = alreadySaved ? "Saved" : "Save pick";
+          save.addEventListener("click", () => {
+            if (!patterns.avatar.test(avatar.vrc_id) || picks.avatar.some((pick) => pick.id === avatar.vrc_id)) return;
+            picks.avatar.unshift({ id: avatar.vrc_id, name: avatar.name || avatar.vrc_id });
+            persist();
+            render();
+            save.disabled = true;
+            save.textContent = "Saved";
+          });
+
+          actions.append(open, save);
+          content.append(title, author, platforms, actions);
+          card.append(preview, content);
+          avatarResultsElement.appendChild(card);
+        }
+
+        loadMoreButton.hidden = !avatarHasMore;
+        loadMoreButton.disabled = avatarLoading;
+      }
+
+      let avatarRequestNumber = 0;
+      let avatarAbortController = null;
+
+      function normalizeAvatarRecord(record) {
+        if (!record || typeof record !== "object") return null;
+        const id = record.vrc_id || record.id || record.avatar_id;
+        if (typeof id !== "string" || !patterns.avatar.test(id)) return null;
+
+        const author = record.author && typeof record.author === "object"
+          ? record.author
+          : { name: record.author_name || record.authorName || "Unknown creator" };
+        return {
+          ...record,
+          vrc_id: id,
+          name: record.name || record.title || id,
+          author,
+          image_url: record.image_url || record.imageUrl ||
+            record.thumbnail_url || record.thumbnailImageUrl ||
+            record.image?.thumb || record.image?.url || "",
+          compatibility: record.compatibility || record.platforms || [],
+        };
+      }
+
+      async function loadAvatarResults(query = "", page = 0, append = false) {
+        // A new search supersedes an older one instead of silently ignoring it.
+        if (avatarAbortController) avatarAbortController.abort();
+        const requestNumber = ++avatarRequestNumber;
+        const controller = new AbortController();
+        avatarAbortController = controller;
+        avatarLoading = true;
+
+        avatarStatus.textContent = query ? `Searching AVTRDB for “${query}”…` : "Loading random avatars...";
+        document.querySelector("#shuffle-avatars").disabled = true;
+        document.querySelector("#avatar-search-form button[type=submit]").disabled = false;
+        loadMoreButton.disabled = true;
+
+        const params = new URLSearchParams({ page_size: "14" });
+        let endpoint;
+        if (query) {
+          params.set("page", String(page));
+          params.set("query", query);
+          endpoint = `https://api.avtrdb.com/v2/avatar/search?${params}`;
+        } else {
+          endpoint = `https://api.avtrdb.com/v2/avatar/random?${params}`;
+        }
+
+        try {
+          const response = await fetch(endpoint, {
+            headers: { Accept: "application/json" },
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error(`AVTRDB returned ${response.status}`);
+          const payload = await response.json();
+          if (requestNumber !== avatarRequestNumber) return;
+
+          // Accept the response envelopes used by the catalog API and its
+          // alternate deployments, while keeping VRCMods out of this flow.
+          const records = Array.isArray(payload) ? payload :
+            payload?.avatars || payload?.items || payload?.data || payload?.results;
+          if (!Array.isArray(records)) throw new Error("Unexpected catalog response");
+
+          const safeRecords = records
+            .filter((avatar) => avatar && avatar.explicit !== true)
+            .map(normalizeAvatarRecord)
+            .filter(Boolean);
+
+          if (append && query === avatarQuery) {
+            const seen = new Set(avatarResults.map((avatar) => avatar.vrc_id));
+            avatarResults = [...avatarResults, ...safeRecords.filter((avatar) => !seen.has(avatar.vrc_id))];
+          } else {
+            avatarResults = safeRecords;
+          }
+
+          avatarQuery = query;
+          avatarPage = page;
+          avatarHasMore = Boolean(query && (
+            payload?.has_more ?? payload?.hasMore ?? payload?.pagination?.has_more
+          ));
+          renderAvatarResults();
+          avatarStatus.textContent = avatarResults.length
+            ? `${avatarResults.length} avatars shown. Explicit listings are hidden.`
+            : "No avatars found. Try another name or keyword.";
+        } catch (error) {
+          if (error.name === "AbortError" || requestNumber !== avatarRequestNumber) return;
+          avatarStatus.textContent = "Avatar search is temporarily unavailable. Check your connection and try again.";
+          if (!append) {
+            avatarResults = [];
+            avatarHasMore = false;
+            renderAvatarResults();
+          }
+        } finally {
+          if (requestNumber === avatarRequestNumber) {
+            avatarLoading = false;
+            avatarAbortController = null;
+            document.querySelector("#shuffle-avatars").disabled = false;
+            document.querySelector("#avatar-search-form button[type=submit]").disabled = false;
+            loadMoreButton.disabled = false;
+          }
+        }
+      }
+
+      function render() {
+        const view = {
+          "avatar-browser": { kind: "avatar", title: "Avatar Browser", mode: "browser" },
+          vrcmods: { kind: "avatar", title: "VRCMods Downloads", mode: "vrcmods" },
+          modules: { kind: "avatar", title: "HTML Modules", mode: "modules" },
+          "world-browser": { kind: "world", title: "World Browser", mode: "browser" },
+          "saved-avatars": { kind: "avatar", title: "Saved Avatars", mode: "saved" },
+          "saved-worlds": { kind: "world", title: "Saved Worlds", mode: "saved" },
+          "crash-avatar": { kind: "avatar", title: "Crash", mode: "featured" },
+          players: { kind: "avatar", title: "Player Tracker", mode: "players" },
+          accounts: { kind: "avatar", title: "Account Manager", mode: "accounts" },
+        }[activeView];
+        const accountMode = view.mode === "accounts";
+        const playerMode = view.mode === "players";
+        const featuredMode = view.mode === "featured";
+        const vrcModsMode = view.mode === "vrcmods";
+        const modulesMode = view.mode === "modules";
+        const listMode = accountMode || playerMode || featuredMode || vrcModsMode || modulesMode;
+        const query = listMode ? "" : search.value.trim().toLowerCase();
+        const filtered = listMode ? [] : picks[view.kind].filter((pick) =>
+          `${pick.name} ${pick.id}`.toLowerCase().includes(query)
+        );
+
+        document.querySelector("#section-title").textContent = view.title;
+        document.querySelector("#section-count").textContent =
+          accountMode ? `${accounts.length} saved` : playerMode ? `${players.length} saved` : vrcModsMode ? "VRCMods catalog" : featuredMode ? "1 featured avatar" : `${picks[view.kind].length} saved`;
+        avatarBrowser.hidden = activeView !== "avatar-browser";
+        worldBrowser.hidden = !(activeView === "avatar-browser" || activeView === "world-browser");
+        vrcModsView.hidden = !vrcModsMode;
+        modulesView.hidden = !modulesMode;
+        crashAvatarView.hidden = !featuredMode;
+        savedView.hidden = view.mode !== "saved";
+        playerView.hidden = !playerMode;
+        accountView.hidden = !accountMode;
+        const browserLink = document.querySelector("#browser-link");
+        browserLink.hidden = view.mode !== "browser";
+        browserLink.href = view.kind === "avatar"
+          ? "https://avtrdb.com/browse?page_size=14"
+          : "https://vrclist.com/?type=search&sort=recent&tags=OCEANView";
+        browserLink.textContent = view.kind === "avatar" ? "Open AVTRDB" : "Browse VRClist";
+        document.querySelector("#total-count").textContent = accountMode
+          ? `${accounts.length} account shortcuts`
+          : playerMode
+            ? `${players.length} saved player links`
+            : `${picks.avatar.length} avatars / ${picks.world.length} worlds`;
+
+        if (accountMode) {
+          list.replaceChildren();
+          renderAccounts();
+          return;
+        }
+
+        if (featuredMode) {
+          list.replaceChildren();
+          document.querySelector("#section-count").textContent = "1 featured avatar";
+          return;
+        }
+
+        if (vrcModsMode || modulesMode) {
+          list.replaceChildren();
+          if (modulesMode) renderModules();
+          return;
+        }
+
+        if (playerMode) {
+          list.replaceChildren();
+          renderPlayers();
+          return;
+        }
+
+        list.replaceChildren();
+
+        if (filtered.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = query ? "No matches." : "No picks saved yet.";
+          list.appendChild(empty);
+          return;
+        }
+
+        for (const pick of filtered) {
+          const row = document.createElement("div");
+          row.className = "item";
+
+          const details = document.createElement("div");
+          const name = document.createElement("div");
+          name.className = "item-name";
+          name.textContent = pick.name;
+          const id = document.createElement("span");
+          id.className = "item-id";
+          id.textContent = pick.id;
+          details.append(name, id);
+
+          const open = document.createElement("a");
+          open.className = "open-link";
+          open.href = pageUrl(view.kind, pick.id);
+          open.target = "_blank";
+          open.rel = "noopener noreferrer";
+          open.textContent = "Open page";
+
+          const remove = document.createElement("button");
+          remove.className = "remove-button";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.setAttribute("aria-label", `Remove ${pick.name}`);
+          remove.addEventListener("click", () => {
+            picks[view.kind] = picks[view.kind].filter((entry) => entry.id !== pick.id);
+            persist();
+            render();
+            if (view.kind === "avatar") renderAvatarResults();
+          });
+
+          row.append(details, open, remove);
+          list.appendChild(row);
+        }
+      }
+
+      document.querySelectorAll("[data-view]").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          activeView = tab.dataset.view;
+          document.querySelectorAll("[data-view]").forEach((button) => {
+            button.setAttribute("aria-selected", String(button === tab));
+          });
+          message.textContent = "";
+          render();
+        });
+      });
+
+      document.querySelector("#player-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const input = document.querySelector("#player-links");
+        const tokens = input.value.split(/[\s,]+/).filter(Boolean);
+        if (addPlayerValues(tokens)) input.value = "";
+      });
+
+      document.querySelector("#choose-player-import").addEventListener("click", () => {
+        document.querySelector("#player-import").click();
+      });
+
+      document.querySelector("#player-import").addEventListener("change", async (event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        try {
+          if (file.size > 256 * 1024) throw new Error("Import file must be 256 KB or smaller.");
+          const text = await file.text();
+          let values;
+          if (file.name.toLowerCase().endsWith(".json") || file.type === "application/json") {
+            const data = JSON.parse(text);
+            if (Array.isArray(data)) values = data;
+            else if (data && typeof data === "object" && !Array.isArray(data) && Object.keys(data).length === 1 && Array.isArray(data.players)) values = data.players;
+            else throw new Error("JSON must be an array of links or an object with a players array.");
+          } else {
+            values = text.split(/[\s,]+/).filter(Boolean);
+          }
+          addPlayerValues(values);
+        } catch (error) {
+          playerMessage.textContent = error instanceof Error ? error.message : "Could not import this list.";
+        } finally {
+          input.value = "";
+        }
+      });
+
+      document.querySelector("#add-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const activeKind = activeView === "saved-avatars" ? "avatar" : "world";
+
+        const id = getId(document.querySelector("#id-input").value, activeKind);
+        if (!id || !patterns[activeKind].test(id)) {
+          message.textContent = activeKind === "avatar"
+            ? "Enter an avatar ID starting with avtr_, or its VRChat page URL."
+            : "Enter a world ID starting with wrld_, or its VRChat page URL.";
+          return;
+        }
+
+        if (picks[activeKind].some((pick) => pick.id === id)) {
+          message.textContent = "That pick is already in this list.";
+          return;
+        }
+
+        const nameInput = document.querySelector("#name-input");
+        picks[activeKind].unshift({ id, name: nameInput.value.trim() || id });
+        document.querySelector("#id-input").value = "";
+        nameInput.value = "";
+        persist();
+        render();
+        if (activeKind === "avatar") renderAvatarResults();
+      });
+
+      document.querySelector("#account-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const input = document.querySelector("#account-label");
+        const label = input.value.trim();
+        if (!label) return;
+        if (accounts.some((entry) => entry.toLowerCase() === label.toLowerCase())) {
+          accountMessage.textContent = "That account label already exists.";
+          return;
+        }
+        if (accounts.length >= 50) {
+          accountMessage.textContent = "The account shortcut limit is 50.";
+          return;
+        }
+        accounts.unshift(label);
+        input.value = "";
+        persistAccounts();
+        render();
+      });
+
+      document.querySelector("#export-accounts").addEventListener("click", () => {
+        const backup = {
+          format: "curryclient-account-labels",
+          version: 1,
+          accounts,
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const download = document.createElement("a");
+        download.href = url;
+        download.download = "curryclient-account-labels.json";
+        download.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        accountMessage.textContent = "Exported label-only account backup.";
+      });
+
+      document.querySelector("#choose-account-import").addEventListener("click", () => {
+        document.querySelector("#account-import").click();
+      });
+
+      document.querySelector("#account-import").addEventListener("change", async (event) => {
+        const input = event.currentTarget;
+        const file = input.files?.[0];
+        if (!file) return;
+
+        try {
+          if (file.size > 64 * 1024) throw new Error("Backup file must be 64 KB or smaller.");
+          const backup = JSON.parse(await file.text());
+          const keys = backup && typeof backup === "object" && !Array.isArray(backup)
+            ? Object.keys(backup).sort().join(",")
+            : "";
+          if (keys !== "accounts,format,version" || backup.format !== "curryclient-account-labels" || backup.version !== 1) {
+            throw new Error("This is not a supported label-only CurryClient backup.");
+          }
+          if (!Array.isArray(backup.accounts) || backup.accounts.length > 50) {
+            throw new Error("Backup must contain no more than 50 account labels.");
+          }
+
+          const imported = backup.accounts.map((label) => {
+            if (typeof label !== "string" || label.trim().length === 0 || label.trim().length > 40) {
+              throw new Error("Each account label must be 1 to 40 characters.");
+            }
+            return label.trim();
+          });
+          const merged = [...imported, ...accounts].filter((label, index, all) =>
+            all.findIndex((entry) => entry.toLowerCase() === label.toLowerCase()) === index
+          );
+          if (merged.length > 50) throw new Error("Import would exceed the 50 account shortcut limit.");
+
+          accounts = merged;
+          persistAccounts(`Imported ${imported.length} label${imported.length === 1 ? "" : "s"}.`);
+          render();
+        } catch (error) {
+          accountMessage.textContent = error instanceof Error ? error.message : "Could not import this backup.";
+        } finally {
+          input.value = "";
+        }
+      });
+
+      moduleInput.addEventListener("change", (event) => {
+        const input = event.currentTarget;
+        const files = Array.from(input.files || []);
+        if (files.length) addHtmlModules(files);
+        input.value = "";
+      });
+
+      document.querySelector("#world-search-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const tags = document.querySelector("#world-tags").value.trim() || "OCEANView";
+        const params = new URLSearchParams({ type: "search", sort: "recent", tags });
+        const url = `https://vrclist.com/?${params}`;
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+
+      document.querySelector("#vrcmods-search-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const query = document.querySelector("#vrcmods-query").value.trim();
+        const params = new URLSearchParams({
+          sort: query ? "bestmatch" : "hot",
+          cid: "1",
+          page: "1",
+        });
+        if (query) params.set("q", query);
+        window.open(`https://vrcmods.com/search?${params}`, "_blank", "noopener,noreferrer");
+      });
+
+      document.querySelector("#avatar-search-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const query = document.querySelector("#avatar-query").value.trim();
+        if (query) loadAvatarResults(query, 0, false);
+        else loadAvatarResults();
+      });
+
+      document.querySelector("#shuffle-avatars").addEventListener("click", () => {
+        document.querySelector("#avatar-query").value = "";
+        loadAvatarResults();
+      });
+
+      loadMoreButton.addEventListener("click", () => {
+        if (avatarHasMore && avatarQuery) loadAvatarResults(avatarQuery, avatarPage + 1, true);
+      });
+
+      search.addEventListener("input", render);
+      render();
+      loadAvatarResults();
+    })();
+  </script>
+</body>
+</html>
