@@ -12,6 +12,16 @@ use tauri_plugin_opener::OpenerExt;
 
 struct Storage(Mutex<PathBuf>);
 
+fn navigation_allowed(url: &url::Url) -> bool {
+    matches!(
+        (url.scheme(), url.host_str(), url.path()),
+        ("http", Some("tauri.localhost"), "/" | "/index.html")
+            | ("tauri", Some("localhost"), "" | "/" | "/index.html")
+    ) || url.as_str() == "about:blank"
+        || url.as_str().starts_with("blob:http://tauri.localhost/")
+        || url.as_str().starts_with("blob:tauri://localhost/")
+}
+
 fn external_url(raw: &str) -> Result<url::Url, String> {
     let url = url::Url::parse(raw).map_err(|_| "Invalid link")?;
     if url.scheme() != "https"
@@ -86,7 +96,7 @@ fn main() {
                 reqwest::Client::builder()
                     .timeout(Duration::from_secs(20))
                     .redirect(reqwest::redirect::Policy::none())
-                    .user_agent("CurryClient/2.0.0")
+                    .user_agent(concat!("CurryClient/", env!("CARGO_PKG_VERSION")))
                     .build()?,
             );
             let window = tauri::WebviewWindowBuilder::new(
@@ -97,15 +107,7 @@ fn main() {
             .title("CurryClient")
             .inner_size(1280.0, 860.0)
             .min_inner_size(360.0, 540.0)
-            .on_navigation(|url| {
-                matches!(
-                    (url.scheme(), url.host_str(), url.path()),
-                    ("http", Some("tauri.localhost"), "/" | "/index.html")
-                        | ("tauri", Some("localhost"), "/" | "/index.html")
-                ) || url.as_str() == "about:blank"
-                    || url.as_str().starts_with("blob:http://tauri.localhost/")
-                    || url.as_str().starts_with("blob:tauri://localhost/")
-            })
+            .on_navigation(navigation_allowed)
             .on_new_window(|_, _| NewWindowResponse::Deny)
             .on_permission_request(|_, _| PermissionResponse::Deny);
             #[cfg(debug_assertions)]
@@ -126,6 +128,25 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn navigation_accepts_linux_root_without_allowing_other_origins_or_assets() {
+        for raw in [
+            "tauri://localhost",
+            "tauri://localhost/",
+            "tauri://localhost/index.html",
+            "http://tauri.localhost/",
+        ] {
+            assert!(navigation_allowed(&raw.parse().unwrap()), "{raw}");
+        }
+        for raw in [
+            "tauri://evil.example",
+            "tauri://localhost/other.html",
+            "https://example.com",
+            "file:///etc/passwd",
+        ] {
+            assert!(!navigation_allowed(&raw.parse().unwrap()), "{raw}");
+        }
+    }
     #[test]
     fn external_links_have_a_strict_boundary() {
         for raw in [

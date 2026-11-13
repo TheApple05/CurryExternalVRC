@@ -1,6 +1,6 @@
 # CurryClient — Rust + Tauri
 
-A Windows VRChat companion, forked from [oxykek/CurryExternalVRC](https://github.com/oxykek/CurryExternalVRC). The desktop app now runs on **Tauri 2 and Rust**, using the system WebView2 runtime. Electron and its bundled Chromium/Node runtime have been removed.
+A VRChat companion for Windows and Linux, forked from [oxykek/CurryExternalVRC](https://github.com/oxykek/CurryExternalVRC). The desktop app runs on **Tauri 2 and Rust**, using WebView2 on Windows and WebKitGTK on Linux. Electron and its bundled Chromium/Node runtime have been removed.
 
 ## Features
 
@@ -34,6 +34,19 @@ npm run dist:win
 
 The executable is `src-tauri/target/release/curryclient.exe`; the NSIS installer is under `src-tauri/target/release/bundle/nsis/`. The installer bootstraps WebView2 when missing. Builds are unsigned and have no automatic updater. `Desktop` GitHub Actions builds Windows artifacts on pushes and PRs.
 
+## Build and run on Linux
+
+Linux packages target x86-64, with Ubuntu 22.04 as the build baseline. Install Rust, Node.js 22+, and the [Tauri Linux prerequisites](https://v2.tauri.app/start/prerequisites/), then:
+
+```sh
+npm ci
+npm run dist:linux
+```
+
+Packages appear in `src-tauri/target/release/bundle/deb/` and `src-tauri/target/release/bundle/appimage/`. On Debian/Ubuntu, install the `.deb` with `sudo apt install ./CurryClient_2.0.1_amd64.deb` so apt installs its GTK/WebKitGTK dependencies. For the AppImage, run `chmod +x CurryClient_2.0.1_amd64.AppImage` and then `./CurryClient_2.0.1_amd64.AppImage`. If FUSE is unavailable, use `./CurryClient_2.0.1_amd64.AppImage --appimage-extract-and-run`.
+
+The `Linux` GitHub Actions workflow runs Rust tests and Clippy, builds both packages, and captures a native startup screenshot under Xvfb. Its manual `source_ref` input can package an existing release tag using `npm run tauri -- build --bundles deb,appimage --ci`, Linux support starts with v2.0.1, which fixes initial navigation on WebKitGTK. This startup check does not cover every Linux desktop, display server, or authenticated VRChat session.
+
 ## Test
 
 ```sh
@@ -60,6 +73,8 @@ The native test sets `CURRYCLIENT_TEST_DATA_DIR` and `CURRYCLIENT_TEST_CDP_PORT`
 
 Tauri stores avatars, worlds, profile IDs and labels in `%APPDATA%\com.curryclient.tauri\state.json`. Rust validates each full snapshot, writes a synced temporary file beside the destination, and atomically replaces the previous file. Save errors appear in the UI. Corrupt state blocks editing and is preserved for recovery rather than replaced with empty data.
 
+On Linux the state file is `$XDG_DATA_HOME/com.curryclient.tauri/state.json`, or `~/.local/share/com.curryclient.tauri/state.json` when `XDG_DATA_HOME` is unset.
+
 The former Electron profile (`%APPDATA%\CurryClient`) and browser storage are untouched. **There is no automatic migration of Electron/browser bookmarks.** Export account labels from the old app and import them here; that export contains labels only. Avatar/world/profile bookmarks must be re-added. Imported HTML modules last only for the current session.
 
 Standalone mode: open `VRCclient.html` directly. It continues using localStorage and browser catalog requests. Its data remains separate from the Tauri app.
@@ -72,7 +87,7 @@ Standalone mode: open `VRCclient.html` directly. It continues using localStorage
 - Catalog requests use fixed AVTRDB endpoints, a timeout, no redirects, a response-size limit, explicit-listing filtering and validated IDs/thumbnails.
 - Imported HTML remains in `sandbox=""` blob frames, with scripts, popups and top-level navigation disabled.
 
-AVTRDB, VRClist and VRCMods are external services and may change availability or behavior. Windows x64 is the tested target; macOS/Linux packaging and authenticated VRChat sessions require separate validation.
+AVTRDB, VRClist and VRCMods are external services and may change availability or behavior. Builds target Windows x64 and Linux x86-64. macOS, Linux ARM64, authenticated VRChat sessions, and broader desktop/Wayland compatibility require separate validation.
 
 ## License
 

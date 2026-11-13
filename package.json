@@ -1,6 +1,6 @@
 {
   "name": "curryclient",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Rust and Tauri VRChat companion",
   "license": "GPL-3.0-only",
@@ -15,7 +15,8 @@
     "test": "node --test test/*.test.cjs",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --locked",
     "pack": "tauri build --no-bundle",
-    "dist:win": "tauri build --bundles nsis"
+    "dist:win": "tauri build --bundles nsis",
+    "dist:linux": "tauri build --bundles deb,appimage"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0",
