@@ -1,35 +1,24 @@
 {
   "name": "curryclient",
-  "productName": "CurryClient",
-  "version": "1.0.0",
-  "description": "Desktop VRChat companion for browsing avatars, worlds, and local bookmarks",
-  "author": "CurryClient contributors",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Rust and Tauri VRChat companion",
   "license": "GPL-3.0-only",
-  "repository": "https://github.com/oxykek/CurryExternalVRC.git",
-  "main": "electron/main.cjs",
-  "engines": { "node": ">=22" },
+  "repository": "https://github.com/TheApple05/CurryExternalVRC.git",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "start": "electron .",
+    "start": "tauri dev",
+    "tauri": "tauri",
+    "build:frontend": "node scripts/build.cjs",
     "test": "node --test test/*.test.cjs",
-    "pack": "electron-builder --dir --publish never",
-    "dist:win": "electron-builder --win --x64 --publish never"
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --locked",
+    "pack": "tauri build --no-bundle",
+    "dist:win": "tauri build --bundles nsis"
   },
   "devDependencies": {
-    "electron": "45.3.1",
-    "electron-builder": "26.18.1",
+    "@tauri-apps/cli": "^2.0.0",
     "playwright-core": "1.65.0"
-  },
-  "overrides": {
-    "app-builder-lib": { "minimatch": "^11.0.1" },
-    "@electron/universal": { "minimatch": "^11.0.1" }
-  },
-  "build": {
-    "appId": "com.curryclient.desktop",
-    "asar": true,
-    "files": ["electron/main.cjs", "VRCclient.html", "LICENSE", "README.md"],
-    "directories": { "output": "dist" },
-    "win": { "target": ["nsis", "portable"] },
-    "nsis": { "artifactName": "CurryClient-Setup-${version}.${ext}" },
-    "portable": { "artifactName": "CurryClient-Portable-${version}.${ext}" }
   }
 }

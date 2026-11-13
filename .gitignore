@@ -2,3 +2,5 @@ node_modules/
 dist/
 .local/
 test-results/
+src-tauri/target/
+src-tauri/gen/
