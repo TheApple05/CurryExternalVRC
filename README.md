@@ -1,6 +1,6 @@
 # CurryClient
 
-A VRChat companion app for Windows, powered by Electron, with tools for browsing avatars, discovering worlds, and managing HTML modules. The standalone browser version remains available.
+A VRChat companion app for Windows and Linux, powered by Electron, with tools for browsing avatars, discovering worlds, and managing HTML modules. The standalone browser version remains available.
 
 ![CurryClient](https://via.placeholder.com/1000x300?text=CurryClient)
 
@@ -69,6 +69,20 @@ Remove-Item Env:CURRYCLIENT_EXECUTABLE
 
 Builds are unsigned and have no automatic updater. Windows may display an unrecognized-publisher warning.
 
+### Linux builds
+
+Build the x86-64 Linux archive on Linux with `npm ci` followed by `npm run dist:linux`. The Desktop workflow runs the source and extracted-package tests on Ubuntu 22.04 under Xvfb, then uploads the archive as `CurryClient-Linux`.
+
+Download the Linux archive from Releases, keep the extracted folder together, and launch it as your normal desktop user:
+
+```sh
+tar -xzf CurryClient-1.0.0-linux-x64.tar.gz
+cd CurryClient-1.0.0-linux-x64
+./curryclient
+```
+
+The archive requires a graphical Linux session and Electron's system libraries. A working Chromium sandbox is required; distributions that restrict unprivileged user namespaces may require a sandbox policy or a root-owned `chrome-sandbox` helper with mode 4755. Do not disable sandboxing to launch the app. The archive does not install system packages or desktop shortcuts.
+
 ### Browser mode
 
 Open `VRCclient.html` in a modern browser. No installation or build step is required.
@@ -96,7 +110,7 @@ External services may change their APIs or availability, which can affect relate
 
 ## Compatibility
 
-The desktop build targets Windows x64. macOS and Linux packaging have not been validated. Browser mode requires a modern browser with JavaScript enabled.
+The desktop builds target Windows x64 and Linux x86-64. Linux CI uses Ubuntu 22.04; other distributions, ARM builds, and macOS packaging have not been validated. Browser mode requires a modern browser with JavaScript enabled.
 
 ## Disclaimer
 

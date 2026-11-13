@@ -22,6 +22,7 @@ test('Electron desktop workflows and isolation', { timeout: 90000 }, async (t) =
 
   async function launch() {
     desktop = await _electron.launch({
+      chromiumSandbox: true,
       executablePath: process.env.CURRYCLIENT_EXECUTABLE || require('electron'),
       args: [...(process.env.CURRYCLIENT_EXECUTABLE ? [] : [root]), `--user-data-dir=${profile}`],
       env,
@@ -55,6 +56,7 @@ test('Electron desktop workflows and isolation', { timeout: 90000 }, async (t) =
     assert.equal(preferences.sandbox, true);
     assert.equal(preferences.webSecurity, true);
     assert.equal(preferences.webviewTag, false);
+    assert.equal(await desktop.evaluate(({ app }) => app.commandLine.hasSwitch('no-sandbox')), false);
     assert.equal(await page.evaluate(() => Notification.requestPermission()), 'denied');
     assert.equal(await desktop.evaluate(async ({ net }) =>
       (await net.fetch('curryclient://app/electron/main.cjs')).status), 404);
