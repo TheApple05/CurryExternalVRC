@@ -1438,7 +1438,7 @@
           save.textContent = alreadySaved ? "Saved" : "Save pick";
           save.addEventListener("click", () => {
             if (!patterns.avatar.test(avatar.vrc_id) || picks.avatar.some((pick) => pick.id === avatar.vrc_id)) return;
-            picks.avatar.unshift({ id: avatar.vrc_id, name: String(avatar.name || avatar.vrc_id).slice(0, 128) });
+            picks.avatar.unshift({ id: avatar.vrc_id, name: avatar.name || avatar.vrc_id });
             persist();
             render();
             save.disabled = true;
