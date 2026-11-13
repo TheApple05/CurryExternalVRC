@@ -28,6 +28,7 @@ test('browser and Tauri frontend workflows', { timeout: 90000 }, async (t) => {
         const saved = { picks: { avatar: [], world: [] }, accounts: [], players: [] };
         const opened = [];
         let failSave = false;
+        let catalogError = null;
         if (native) {
           await page.exposeFunction('testInvoke', async (command, args) => {
             if (command === 'load_state') return saved;
@@ -36,11 +37,15 @@ test('browser and Tauri frontend workflows', { timeout: 90000 }, async (t) => {
               Object.assign(saved, structuredClone(args.state));
               return;
             }
-            if (command === 'search_avatars') return { avatars: [avatar] };
+            if (command === 'search_avatars') return catalogError ? { test_error: catalogError } : { avatars: [avatar] };
             if (command === 'open_external') { opened.push(args.url); return; }
             throw new Error(`Unexpected command ${command}`);
           });
-          await page.addInitScript(() => { window.__TAURI__ = { core: { invoke: window.testInvoke } }; });
+          await page.addInitScript(() => { window.__TAURI__ = { core: { invoke: async (...args) => {
+            const result = await window.testInvoke(...args);
+            if (result?.test_error) throw result.test_error;
+            return result;
+          } } }; });
         } else {
           await context.route('https://api.avtrdb.com/**', (route) => route.fulfill({
             contentType: 'application/json', body: JSON.stringify({ avatars: [avatar] }),
@@ -101,6 +106,17 @@ test('browser and Tauri frontend workflows', { timeout: 90000 }, async (t) => {
         await page.getByRole('button', { name: 'Remove preview.html', exact: true }).click();
         assert.equal(await page.locator('#module-preview').isHidden(), true);
         await page.getByRole('tab', { name: 'Avatar Browser', exact: true }).click();
+        if (native) {
+          catalogError = 'AVTRDB refused this request (HTTP 403). Use Open AVTRDB to search in your browser.';
+          await page.getByLabel('Search avatar catalog', { exact: true }).fill('cat');
+          await page.locator('#avatar-search-form').getByRole('button', { name: 'Search', exact: true }).click();
+          await page.getByText(catalogError, { exact: true }).waitFor();
+          assert.equal(await page.getByRole('link', { name: 'Open AVTRDB', exact: true }).isVisible(), true);
+          assert.equal(saved.picks.avatar[0].id, 'avtr_test');
+          catalogError = null;
+          await page.locator('#avatar-search-form').getByRole('button', { name: 'Search', exact: true }).click();
+          await page.locator('#avatar-results').getByText('Test avatar', { exact: true }).waitFor();
+        }
         await mkdir(path.join(root, 'test-results'), { recursive: true });
         for (const width of [1280, 390]) {
           await page.setViewportSize({ width, height: 860 });

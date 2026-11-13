@@ -1,5 +1,27 @@
 use crate::state::valid_id;
 use serde_json::{json, Value};
+use std::time::Duration;
+
+pub fn client() -> Result<reqwest::Client, reqwest::Error> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .redirect(reqwest::redirect::Policy::none())
+        .user_agent(concat!("CurryClient/", env!("CARGO_PKG_VERSION")))
+        .build()
+}
+
+fn request_error(error: reqwest::Error) -> String {
+    match error.status().map(|status| status.as_u16()) {
+        Some(403) => {
+            "AVTRDB refused this request (HTTP 403). Use Open AVTRDB to search in your browser."
+                .into()
+        }
+        Some(429) => "AVTRDB is limiting requests (HTTP 429). Wait before searching again.".into(),
+        Some(status) => format!("AVTRDB returned HTTP {status}. Try again later."),
+        None if error.is_timeout() => "AVTRDB did not respond in time. Try again.".into(),
+        None => "Could not connect to AVTRDB. Check your connection and try again.".into(),
+    }
+}
 
 pub fn normalize(payload: Value) -> Result<Value, String> {
     let records = payload
@@ -94,22 +116,79 @@ pub async fn search(client: &reqwest::Client, query: &str, page: u32) -> Result<
     let mut response = request
         .send()
         .await
-        .map_err(|e| format!("Catalog request failed: {e}"))?
+        .map_err(request_error)?
         .error_for_status()
-        .map_err(|e| format!("Catalog request failed: {e}"))?;
+        .map_err(request_error)?;
     let mut bytes = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+    while let Some(chunk) = response.chunk().await.map_err(request_error)? {
         if bytes.len() + chunk.len() > 2 * 1024 * 1024 {
-            return Err("Catalog response exceeds 2 MB.".into());
+            return Err("AVTRDB returned too much data. Use Open AVTRDB to browse instead.".into());
         }
         bytes.extend_from_slice(&chunk);
     }
-    normalize(serde_json::from_slice(&bytes).map_err(|e| format!("Invalid catalog JSON: {e}"))?)
+    normalize(
+        serde_json::from_slice(&bytes)
+            .map_err(|_| "AVTRDB returned an invalid response. Try again later.")?,
+    )
+    .map_err(|_| "AVTRDB returned an unsupported response. Try again later.".into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::{
+        io::{Read, Write},
+        net::TcpListener,
+        thread,
+    };
+
+    #[test]
+    fn provider_refusal_is_distinct_from_a_connection_failure() {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            let received = socket.read(&mut [0; 4096]).unwrap();
+            assert!(received > 0);
+            socket
+                .write_all(
+                    b"HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                )
+                .unwrap();
+        });
+        tauri::async_runtime::block_on(async {
+            let error = client()
+                .unwrap()
+                .get(format!("http://{address}/"))
+                .send()
+                .await
+                .unwrap()
+                .error_for_status()
+                .unwrap_err();
+            let message = request_error(error);
+            assert!(message.contains("HTTP 403"));
+            assert!(message.contains("Open AVTRDB"));
+            assert!(!message.contains("Check your connection"));
+        });
+        server.join().unwrap();
+    }
+
+    #[test]
+    #[ignore = "Requires the live AVTRDB service"]
+    fn live_catalog_requests() {
+        tauri::async_runtime::block_on(async {
+            let client = client().unwrap();
+            for query in ["", "cat"] {
+                let payload = search(&client, query, 0).await.unwrap();
+                let avatars = payload["avatars"].as_array().unwrap();
+                assert!(!avatars.is_empty(), "No live results for {query:?}");
+                eprintln!(
+                    "Live catalog {query:?}: {} validated avatars",
+                    avatars.len()
+                );
+            }
+        });
+    }
 
     #[test]
     fn envelopes_filtering_and_untrusted_fields() {

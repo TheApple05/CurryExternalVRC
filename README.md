@@ -43,7 +43,7 @@ npm ci
 npm run dist:linux
 ```
 
-Packages appear in `src-tauri/target/release/bundle/deb/` and `src-tauri/target/release/bundle/appimage/`. On Debian/Ubuntu, install the `.deb` with `sudo apt install ./CurryClient_2.0.1_amd64.deb` so apt installs its GTK/WebKitGTK dependencies. For the AppImage, run `chmod +x CurryClient_2.0.1_amd64.AppImage` and then `./CurryClient_2.0.1_amd64.AppImage`. If FUSE is unavailable, use `./CurryClient_2.0.1_amd64.AppImage --appimage-extract-and-run`.
+Packages appear in `src-tauri/target/release/bundle/deb/` and `src-tauri/target/release/bundle/appimage/`. On Debian/Ubuntu, install the `.deb` with `sudo apt install ./CurryClient_2.0.2_amd64.deb` so apt installs its GTK/WebKitGTK dependencies. For the AppImage, run `chmod +x CurryClient_2.0.2_amd64.AppImage` and then `./CurryClient_2.0.2_amd64.AppImage`. If FUSE is unavailable, use `./CurryClient_2.0.2_amd64.AppImage --appimage-extract-and-run`.
 
 The `Linux` GitHub Actions workflow runs Rust tests and Clippy, builds both packages, and captures a native startup screenshot under Xvfb. Its manual `source_ref` input can package an existing release tag using `npm run tauri -- build --bundles deb,appimage --ci`, Linux support starts with v2.0.1, which fixes initial navigation on WebKitGTK. This startup check does not cover every Linux desktop, display server, or authenticated VRChat session.
 
@@ -68,6 +68,16 @@ Remove-Item Env:CURRYCLIENT_EXECUTABLE
 ```
 
 The native test sets `CURRYCLIENT_TEST_DATA_DIR` and `CURRYCLIENT_TEST_CDP_PORT`, both honored **only by debug builds**. Rust passes the test port and temporary WebView directory directly to WebView2 because elevated Windows runners ignore WebView2 environment overrides ([Microsoft explanation](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645)). Release builds have neither this storage override nor built-in remote debugging. Mocked frontend tests do not prove native integration; native checks are reported separately.
+
+## Avatar catalog troubleshooting
+
+The released AppImage was checked with live random discovery and keyword search on Ubuntu 24.04 under WSL. AVTRDB/Cloudflare rejects requests from the GitHub-hosted test runners with HTTP 403; that is separate from Linux support. The app now reports service refusals, rate limits and timeouts directly. Use the existing Open AVTRDB link to browse on the official website when API access is refused.
+
+Normal tests use deterministic responses and do not claim that a blocked live API check passed. To explicitly check both live random and keyword requests from your own network:
+
+```sh
+cargo test --manifest-path src-tauri/Cargo.toml --locked live_catalog_requests -- --ignored --nocapture
+```
 
 ## Saved data and migration
 

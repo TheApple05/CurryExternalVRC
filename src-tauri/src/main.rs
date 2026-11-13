@@ -3,7 +3,7 @@
 mod catalog;
 mod state;
 
-use std::{path::PathBuf, sync::Mutex, time::Duration};
+use std::{path::PathBuf, sync::Mutex};
 use tauri::{
     webview::{NewWindowResponse, PermissionResponse},
     Manager,
@@ -61,7 +61,11 @@ async fn search_avatars(
     query: String,
     page: u32,
 ) -> Result<serde_json::Value, String> {
-    catalog::search(&client, query.trim(), page).await
+    catalog::search(&client, query.trim(), page)
+        .await
+        .inspect_err(|error| {
+            eprintln!("Avatar catalog: {error}");
+        })
 }
 
 #[tauri::command]
@@ -92,13 +96,7 @@ fn main() {
                 .map(PathBuf::from)
                 .unwrap_or(data_dir);
             app.manage(Storage(Mutex::new(data_dir.join("state.json"))));
-            app.manage(
-                reqwest::Client::builder()
-                    .timeout(Duration::from_secs(20))
-                    .redirect(reqwest::redirect::Policy::none())
-                    .user_agent(concat!("CurryClient/", env!("CARGO_PKG_VERSION")))
-                    .build()?,
-            );
+            app.manage(catalog::client()?);
             let window = tauri::WebviewWindowBuilder::new(
                 app,
                 "main",
