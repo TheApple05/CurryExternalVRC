@@ -36,8 +36,7 @@ test('real Windows Tauri app, Rust commands and restart', {
     app = spawn(process.env.CURRYCLIENT_EXECUTABLE, [], { windowsHide: true, env: {
       ...process.env,
       CURRYCLIENT_TEST_DATA_DIR: profile,
-      WEBVIEW2_USER_DATA_FOLDER: path.join(profile, 'webview'),
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port} --remote-debugging-address=127.0.0.1`,
+      CURRYCLIENT_TEST_CDP_PORT: String(port),
     }, stdio: 'pipe' });
     app.on('error', (error) => errors.push(error.message));
     let stderr = '';

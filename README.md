@@ -54,7 +54,7 @@ npm test
 Remove-Item Env:CURRYCLIENT_EXECUTABLE
 ```
 
-The native test sets a temporary storage directory through `CURRYCLIENT_TEST_DATA_DIR`, which is honored **only by debug builds**, and enables WebView2 remote debugging only in the test process. Release builds have neither this storage override nor built-in remote debugging. Mocked frontend tests do not prove native integration; native checks are reported separately.
+The native test sets `CURRYCLIENT_TEST_DATA_DIR` and `CURRYCLIENT_TEST_CDP_PORT`, both honored **only by debug builds**. Rust passes the test port and temporary WebView directory directly to WebView2 because elevated Windows runners ignore WebView2 environment overrides ([Microsoft explanation](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645)). Release builds have neither this storage override nor built-in remote debugging. Mocked frontend tests do not prove native integration; native checks are reported separately.
 
 ## Saved data and migration
 

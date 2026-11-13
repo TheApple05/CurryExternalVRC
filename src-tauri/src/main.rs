@@ -89,7 +89,7 @@ fn main() {
                     .user_agent("CurryClient/2.0.0")
                     .build()?,
             );
-            tauri::WebviewWindowBuilder::new(
+            let window = tauri::WebviewWindowBuilder::new(
                 app,
                 "main",
                 tauri::WebviewUrl::App("index.html".into()),
@@ -107,8 +107,16 @@ fn main() {
                     || url.as_str().starts_with("blob:tauri://localhost/")
             })
             .on_new_window(|_, _| NewWindowResponse::Deny)
-            .on_permission_request(|_, _| PermissionResponse::Deny)
-            .build()?;
+            .on_permission_request(|_, _| PermissionResponse::Deny);
+            #[cfg(debug_assertions)]
+            let window = if let Ok(port) = std::env::var("CURRYCLIENT_TEST_CDP_PORT") {
+                let port: std::num::NonZeroU16 = port.parse()?;
+                // Elevated WebView2 hosts ignore browser arguments from environment variables.
+                window.additional_browser_args(&format!(
+                    "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --remote-debugging-port={port} --remote-debugging-address=127.0.0.1"
+                )).data_directory(data_dir.join("webview"))
+            } else { window };
+            window.build()?;
             Ok(())
         })
         .run(tauri::generate_context!())
