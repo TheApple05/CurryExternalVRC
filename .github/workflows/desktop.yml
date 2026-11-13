@@ -1,0 +1,31 @@
+name: Desktop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run dist:win
+      - name: Smoke-test packaged app
+        run: npm test
+        env:
+          CURRYCLIENT_EXECUTABLE: '${{ github.workspace }}\dist\win-unpacked\CurryClient.exe'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CurryClient-Windows
+          path: dist/*.exe
+          if-no-files-found: error
