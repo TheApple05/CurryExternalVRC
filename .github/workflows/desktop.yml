@@ -49,8 +49,6 @@ jobs:
         run: |
           mkdir -p .local/linux-test
           tar -xzf dist/*-linux-x64.tar.gz --strip-components=1 -C .local/linux-test
-          sudo chown root:root .local/linux-test/chrome-sandbox
-          sudo chmod 4755 .local/linux-test/chrome-sandbox
           CURRYCLIENT_EXECUTABLE="$PWD/.local/linux-test/curryclient" xvfb-run -a npm test
       - uses: actions/upload-artifact@v4
         with:
