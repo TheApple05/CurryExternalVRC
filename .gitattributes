@@ -3,3 +3,4 @@
 *.cjs text eol=lf
 *.json text eol=lf
 *.yml text eol=lf
+electron/AppRun text eol=lf

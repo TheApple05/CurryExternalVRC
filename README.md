@@ -71,7 +71,16 @@ Builds are unsigned and have no automatic updater. Windows may display an unreco
 
 ### Linux builds
 
-Build the x86-64 Linux archive on Linux with `npm ci` followed by `npm run dist:linux`. The Desktop workflow runs the source and extracted-package tests on Ubuntu 22.04 under Xvfb, then uploads the archive as `CurryClient-Linux`.
+Build the x86-64 Linux archive and AppImage on Linux with `npm ci` followed by `npm run dist:linux`. The Desktop workflow runs the source, extracted-archive, and AppImage tests on Ubuntu 22.04 under Xvfb, then uploads both packages as `CurryClient-Linux`.
+
+To run the AppImage from Releases:
+
+```sh
+chmod +x CurryClient-1.0.0-linux-x64.AppImage
+./CurryClient-1.0.0-linux-x64.AppImage
+```
+
+The AppImage uses FUSE 2 (`libfuse2` on Ubuntu 22.04). On hosts without FUSE, run it with `--appimage-extract`, then launch `squashfs-root/AppRun`. Its launcher preserves Chromium sandboxing and does not automatically disable it when the host blocks user namespaces.
 
 Download the Linux archive from Releases, keep the extracted folder together, and launch it as your normal desktop user:
 

@@ -31,10 +31,12 @@
     "directories": { "output": "dist" },
     "win": { "target": ["nsis", "portable"] },
     "linux": {
-      "target": ["tar.gz"],
+      "target": ["tar.gz", "AppImage"],
       "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
-      "category": "Utility"
+      "category": "Utility",
+      "extraFiles": [{ "from": "electron/AppRun", "to": "AppRun" }]
     },
+    "appImage": { "executableArgs": [] },
     "nsis": { "artifactName": "CurryClient-Setup-${version}.${ext}" },
     "portable": { "artifactName": "CurryClient-Portable-${version}.${ext}" }
   }
