@@ -1,0 +1,83 @@
+name: Linux
+
+on:
+  push:
+    branches: [main, codex/linux-build]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Source branch, tag, or commit to package
+        default: main
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev patchelf xvfb xdotool imagemagick dbus-x11
+      - run: npm ci
+      - run: npm run build:frontend
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+      - run: npm run test:rust
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --locked -- -D warnings
+      - name: Build Linux packages
+        run: npm run tauri -- build --bundles deb,appimage --ci
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+      - name: Launch native Linux app
+        run: |
+          mkdir -p test-results
+          dbus-run-session -- xvfb-run -a -s '-screen 0 1440x1000x24' bash <<'SMOKE'
+          set -euo pipefail
+          export XDG_DATA_HOME="$(mktemp -d)"
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          export LIBGL_ALWAYS_SOFTWARE=1
+          src-tauri/target/release/curryclient >test-results/linux-startup.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          window=""
+          for attempt in $(seq 1 60); do
+            kill -0 "$app_pid"
+            window=$(xdotool search --onlyvisible --name '^CurryClient$' 2>/dev/null | head -n 1 || true)
+            if [ -n "$window" ]; then break; fi
+            sleep 1
+          done
+          test -n "$window"
+          sleep 5
+          kill -0 "$app_pid"
+          import -window "$window" test-results/linux-startup.png
+          test -s test-results/linux-startup.png
+          SMOKE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CurryClient-Linux-x86_64
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: CurryClient-Linux-startup
+          path: test-results/linux-startup.*
+          if-no-files-found: ignore
