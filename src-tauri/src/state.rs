@@ -138,6 +138,28 @@ mod tests {
         assert_eq!(fs::read_to_string(path).unwrap(), "broken");
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn failed_replacement_preserves_previous_file() {
+        use std::os::windows::fs::OpenOptionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        let original = SavedState::default();
+        save(&path, &original).unwrap();
+        // Allow reads while denying Windows permission to replace the file.
+        let _locked = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(1)
+            .open(&path)
+            .unwrap();
+        let changed = SavedState {
+            accounts: vec!["Work".into()],
+            ..Default::default()
+        };
+        assert!(save(&path, &changed).is_err());
+        assert_eq!(load(&path).unwrap(), original);
+    }
+
     #[test]
     fn rejects_invalid_ids_and_limits() {
         for id in ["avtr_", "avtr_../secret", "wrld_wrong", "avtr_💥"] {
