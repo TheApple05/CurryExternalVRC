@@ -1544,7 +1544,9 @@
             : "No avatars found. Try another name or keyword.";
         } catch (error) {
           if (error.name === "AbortError" || requestNumber !== avatarRequestNumber) return;
-          avatarStatus.textContent = "Avatar search is temporarily unavailable. Check your connection and try again.";
+          avatarStatus.textContent = invoke && typeof error === "string"
+            ? error
+            : "Avatar search is temporarily unavailable. Check your connection and try again.";
           if (!append) {
             avatarResults = [];
             avatarHasMore = false;
