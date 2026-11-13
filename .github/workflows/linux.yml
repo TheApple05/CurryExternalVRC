@@ -44,7 +44,7 @@ jobs:
         run: npm run tauri -- build --bundles deb,appimage --ci
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
-      - name: Launch native Linux app
+      - name: Launch Linux AppImage
         run: |
           mkdir -p test-results
           dbus-run-session -- xvfb-run -a -s '-screen 0 1440x1000x24' bash <<'SMOKE'
@@ -52,7 +52,8 @@ jobs:
           export XDG_DATA_HOME="$(mktemp -d)"
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
           export LIBGL_ALWAYS_SOFTWARE=1
-          src-tauri/target/release/curryclient >test-results/linux-startup.log 2>&1 &
+          appimages=(src-tauri/target/release/bundle/appimage/*.AppImage)
+          "${appimages[0]}" --appimage-extract-and-run >test-results/linux-startup.log 2>&1 &
           app_pid=$!
           trap 'kill "$app_pid" 2>/dev/null || true' EXIT
           window=""
