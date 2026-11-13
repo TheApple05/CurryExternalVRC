@@ -1,5 +1,14 @@
 use crate::state::valid_id;
 use serde_json::{json, Value};
+use std::time::Duration;
+
+pub fn client() -> Result<reqwest::Client, reqwest::Error> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(20))
+        .redirect(reqwest::redirect::Policy::none())
+        .user_agent(concat!("CurryClient/", env!("CARGO_PKG_VERSION")))
+        .build()
+}
 
 pub fn normalize(payload: Value) -> Result<Value, String> {
     let records = payload
@@ -94,7 +103,7 @@ pub async fn search(client: &reqwest::Client, query: &str, page: u32) -> Result<
     let mut response = request
         .send()
         .await
-        .map_err(|e| format!("Catalog request failed: {e}"))?
+        .map_err(|e| format!("Catalog request failed: {e:?}"))?
         .error_for_status()
         .map_err(|e| format!("Catalog request failed: {e}"))?;
     let mut bytes = Vec::new();
@@ -110,6 +119,23 @@ pub async fn search(client: &reqwest::Client, query: &str, page: u32) -> Result<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "Requires the live AVTRDB service"]
+    fn live_catalog_requests() {
+        tauri::async_runtime::block_on(async {
+            let client = client().unwrap();
+            for query in ["", "cat"] {
+                let payload = search(&client, query, 0).await.unwrap();
+                let avatars = payload["avatars"].as_array().unwrap();
+                assert!(!avatars.is_empty(), "No live results for {query:?}");
+                eprintln!(
+                    "Live catalog {query:?}: {} validated avatars",
+                    avatars.len()
+                );
+            }
+        });
+    }
 
     #[test]
     fn envelopes_filtering_and_untrusted_fields() {
