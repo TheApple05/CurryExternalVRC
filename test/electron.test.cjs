@@ -35,6 +35,7 @@ test('Electron desktop workflows and isolation', { timeout: 90000 }, async (t) =
     page = await desktop.firstWindow();
     page.setDefaultTimeout(10000);
     page.on('pageerror', (error) => errors.push(error.message));
+    await page.waitForURL('curryclient://app/', { waitUntil: 'load' });
     await page.reload();
     await page.locator('#avatar-results').getByText('Desktop test avatar', { exact: true }).waitFor();
     await desktop.evaluate(({ shell }) => {
