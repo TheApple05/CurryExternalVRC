@@ -28,3 +28,32 @@ jobs:
           name: CurryClient-Windows
           path: dist/*.exe
           if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prepare the Electron sandbox helper
+        run: |
+          node -e "require('electron')"
+          sudo chown root:root node_modules/electron/dist/chrome-sandbox
+          sudo chmod 4755 node_modules/electron/dist/chrome-sandbox
+      - run: xvfb-run -a npm test
+      - run: npm run dist:linux
+      - name: Smoke-test the extracted Linux archive
+        run: |
+          mkdir -p .local/linux-test
+          tar -xzf dist/*-linux-x64.tar.gz --strip-components=1 -C .local/linux-test
+          sudo chown root:root .local/linux-test/chrome-sandbox
+          sudo chmod 4755 .local/linux-test/chrome-sandbox
+          CURRYCLIENT_EXECUTABLE="$PWD/.local/linux-test/curryclient" xvfb-run -a npm test
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CurryClient-Linux
+          path: dist/*-linux-x64.tar.gz
+          if-no-files-found: error

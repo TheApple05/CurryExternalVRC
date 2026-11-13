@@ -12,7 +12,8 @@
     "start": "electron .",
     "test": "node --test test/*.test.cjs",
     "pack": "electron-builder --dir --publish never",
-    "dist:win": "electron-builder --win --x64 --publish never"
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never"
   },
   "devDependencies": {
     "electron": "45.3.1",
@@ -29,6 +30,11 @@
     "files": ["electron/main.cjs", "VRCclient.html", "LICENSE", "README.md"],
     "directories": { "output": "dist" },
     "win": { "target": ["nsis", "portable"] },
+    "linux": {
+      "target": ["tar.gz"],
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
+      "category": "Utility"
+    },
     "nsis": { "artifactName": "CurryClient-Setup-${version}.${ext}" },
     "portable": { "artifactName": "CurryClient-Portable-${version}.${ext}" }
   }
