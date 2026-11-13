@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CurryClient</title>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <style>
     :root {
       color-scheme: dark;
@@ -18,6 +19,7 @@
     }
 
     * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
 
     body {
       margin: 0;
@@ -841,7 +843,8 @@
             <button class="add-button" type="submit">Search</button>
             <button class="shuffle-button" id="shuffle-avatars" type="button">Shuffle</button>
           </form>
-          <p class="avatar-status" id="avatar-status" role="status">Loading avatars...</p>\n          <p class="module-note">Avatar Browser searches AVTRDB only. VRCMods has its own separate search tab.</p>
+          <p class="avatar-status" id="avatar-status" role="status">Loading avatars...</p>
+          <p class="module-note">Avatar Browser searches AVTRDB only. VRCMods has its own separate search tab.</p>
           <div class="avatar-results" id="avatar-results"></div>
           <button class="load-more" id="load-more" type="button" hidden>Load more</button>
         </section>
@@ -979,7 +982,49 @@
   </main>
 
   <script>
-    (() => {
+    (async () => {
+      const invoke = window.__TAURI__?.core.invoke;
+      let nativeState;
+      if (invoke) {
+        document.querySelector(".local-note").textContent = "Saved on this device";
+        try {
+          nativeState = await invoke("load_state");
+        } catch (error) {
+          const notice = document.createElement("p");
+          notice.setAttribute("role", "alert");
+          notice.textContent = `Could not load saved data. Close the app and repair or restore state.json before retrying. ${error}`;
+          document.querySelector("main").replaceChildren(notice);
+          return;
+        }
+      }
+      let pendingSave = Promise.resolve();
+      function saveNative(target, successMessage) {
+        const state = structuredClone({ picks, accounts, players });
+        target.textContent = "Saving…";
+        pendingSave = pendingSave.catch(() => {}).then(() => invoke("save_state", { state }));
+        pendingSave.then(() => { target.textContent = successMessage; }, (error) => {
+          target.textContent = `Could not save changes: ${error}. Keep the app open and try again.`;
+        });
+      }
+      function openExternal(url) {
+        if (!invoke) return window.open(url, "_blank", "noopener,noreferrer");
+        invoke("open_external", { url }).catch((error) => {
+          document.querySelector("#desktop-status").textContent = `Could not open link: ${error}`;
+        });
+      }
+      if (invoke) {
+        const status = document.createElement("p");
+        status.id = "desktop-status";
+        status.className = "message";
+        status.setAttribute("role", "status");
+        document.querySelector(".quick-rail").append(status);
+        document.addEventListener("click", (event) => {
+          const link = event.target.closest("a[href]");
+          if (!link || link.hasAttribute("download")) return;
+          event.preventDefault();
+          openExternal(link.href);
+        });
+      }
       const storageKey = "vrchat-picks-v1";
       const accountStorageKey = "curryclient-account-labels-v1";
       const playerStorageKey = "curryclient-player-tracker-v1";
@@ -1025,6 +1070,7 @@
       const loadMoreButton = document.querySelector("#load-more");
 
       function loadPicks() {
+        if (invoke) return nativeState.picks;
         try {
           const value = JSON.parse(localStorage.getItem(storageKey) || "{}");
           return {
@@ -1037,6 +1083,7 @@
       }
 
       function loadAccounts() {
+        if (invoke) return nativeState.accounts;
         try {
           const value = JSON.parse(localStorage.getItem(accountStorageKey) || "[]");
           return Array.isArray(value)
@@ -1048,6 +1095,7 @@
       }
 
       function loadPlayers() {
+        if (invoke) return nativeState.players;
         try {
           const value = JSON.parse(localStorage.getItem(playerStorageKey) || "[]");
           return Array.isArray(value)
@@ -1059,6 +1107,7 @@
       }
 
       function persistPlayers(successMessage = "Player list saved locally.") {
+        if (invoke) return saveNative(playerMessage, successMessage);
         try {
           localStorage.setItem(playerStorageKey, JSON.stringify(players));
           playerMessage.textContent = successMessage;
@@ -1246,6 +1295,7 @@
       }
 
       function persistAccounts(successMessage = "Account labels updated locally.") {
+        if (invoke) return saveNative(accountMessage, successMessage);
         try {
           localStorage.setItem(accountStorageKey, JSON.stringify(accounts));
           accountMessage.textContent = successMessage;
@@ -1302,6 +1352,7 @@
       }
 
       function persist() {
+        if (invoke) return saveNative(message, "Saved locally.");
         try {
           localStorage.setItem(storageKey, JSON.stringify(picks));
           message.textContent = "Saved locally.";
@@ -1451,12 +1502,17 @@
         }
 
         try {
-          const response = await fetch(endpoint, {
-            headers: { Accept: "application/json" },
-            signal: controller.signal,
-          });
-          if (!response.ok) throw new Error(`AVTRDB returned ${response.status}`);
-          const payload = await response.json();
+          let payload;
+          if (invoke) {
+            payload = await invoke("search_avatars", { query, page });
+          } else {
+            const response = await fetch(endpoint, {
+              headers: { Accept: "application/json" },
+              signal: controller.signal,
+            });
+            if (!response.ok) throw new Error(`AVTRDB returned ${response.status}`);
+            payload = await response.json();
+          }
           if (requestNumber !== avatarRequestNumber) return;
 
           // Accept the response envelopes used by the catalog API and its
@@ -1785,7 +1841,7 @@
         const tags = document.querySelector("#world-tags").value.trim() || "OCEANView";
         const params = new URLSearchParams({ type: "search", sort: "recent", tags });
         const url = `https://vrclist.com/?${params}`;
-        window.open(url, "_blank", "noopener,noreferrer");
+        openExternal(url);
       });
 
       document.querySelector("#vrcmods-search-form").addEventListener("submit", (event) => {
@@ -1797,7 +1853,7 @@
           page: "1",
         });
         if (query) params.set("q", query);
-        window.open(`https://vrcmods.com/search?${params}`, "_blank", "noopener,noreferrer");
+        openExternal(`https://vrcmods.com/search?${params}`);
       });
 
       document.querySelector("#avatar-search-form").addEventListener("submit", (event) => {

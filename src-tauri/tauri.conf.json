@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CurryClient",
+  "version": "2.0.0",
+  "identifier": "com.curryclient.tauri",
+  "build": {
+    "beforeDevCommand": "npm run build:frontend",
+    "beforeBuildCommand": "npm run build:frontend",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://thumb.avtrdb.com; connect-src ipc: http://ipc.localhost; frame-src blob:; base-uri 'none'; form-action 'none'; object-src 'none'",
+      "capabilities": ["main"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "shortDescription": "VRChat companion built with Rust and Tauri",
+    "license": "GPL-3.0-only",
+    "windows": { "webviewInstallMode": { "type": "downloadBootstrapper" } }
+  }
+}

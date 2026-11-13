@@ -1,94 +1,79 @@
-# CurryClient
+# CurryClient — Rust + Tauri
 
-A browser-based VRChat companion client with tools for browsing avatars, discovering worlds, managing HTML modules, and more.
-
-![CurryClient](https://via.placeholder.com/1000x300?text=CurryClient)
+A Windows VRChat companion, forked from [oxykek/CurryExternalVRC](https://github.com/oxykek/CurryExternalVRC). The desktop app now runs on **Tauri 2 and Rust**, using the system WebView2 runtime. Electron and its bundled Chromium/Node runtime have been removed.
 
 ## Features
 
-### Avatar Browser
-- Search for VRChat avatars.
-- Browse avatar listings.
-- View avatar information.
-- Save avatars for later.
-- Keep avatar browsing separate from VRCMods.
+- AVTRDB avatar search, random discovery, pagination and saved avatars.
+- World discovery through VRClist, plus saved worlds.
+- Separate VRCMods search.
+- Session-only HTML modules, previewed in script-disabled sandboxed frames.
+- Saved VRChat profile links. “Player Tracker” is a bookmarks list; it does not monitor presence or activity.
+- Account labels with JSON import/export. Login and signup open in the default browser; credentials, cookies and browser profiles are never read.
+- The existing featured avatar links remain ordinary browser shortcuts.
 
-### World Browser
-- Discover public VRChat worlds.
-- Search worlds using tags.
-- Browse world listings through VRClist.
-- Save worlds for later.
-- Designed to sit underneath Avatar Browser.
+The original interface and standalone browser mode are retained. Rust owns desktop catalog requests, response normalization, validated persistence, and approved external link opening. The HTML/JavaScript layer renders the interface and handles browser file selection.
 
-### VRCMods
-- Dedicated VRCMods section.
-- Kept separate from the Avatar Browser and World Browser.
+## Run from source
 
-### HTML Modules
-- Import HTML module files.
-- Preview imported modules.
-- Remove modules when no longer needed.
+Install [Tauri's Windows prerequisites](https://v2.tauri.app/start/prerequisites/): Rust (MSVC toolchain), Visual Studio C++ Build Tools, WebView2, and Node.js 22+.
 
-### Additional Tools
-- Saved Avatars
-- Saved Worlds
-- Crash
-- Player Tracker
-- Accounts
-- VRChat Login
+```sh
+npm ci
+npm start
+```
 
-## Getting Started
+No frontend framework or development server is required. A small build script extracts the frontend JavaScript into `dist/app.js` so the desktop CSP does not require inline scripts.
 
-1. Download or clone this repository.
-2. Open the project folder.
-3. Open `VRCclient.html` in a modern web browser.
-4. Use the navigation menu to access the available tools.
+## Build Windows binaries
 
-No traditional installation is required for the basic browser-based client.
+```sh
+npm run pack
+npm run dist:win
+```
 
-## Data Storage
+The executable is `src-tauri/target/release/curryclient.exe`; the NSIS installer is under `src-tauri/target/release/bundle/nsis/`. The installer bootstraps WebView2 when missing. Builds are unsigned and have no automatic updater. `Desktop` GitHub Actions builds Windows artifacts on pushes and PRs.
 
-CurryClient is designed as a browser-based application. Some information may be saved locally in your browser.
+## Test
 
-Clearing browser data may remove locally stored information.
+```sh
+npm run build:frontend
+npm run test:rust
+npm test
+cargo clippy --manifest-path src-tauri/Cargo.toml --locked -- -D warnings
+```
 
-## External Services
+Rust tests cover validation, atomic replacement, invalid/corrupt data preservation, catalog response variants and the external-link allowlist. Frontend tests use installed Chrome through Playwright, covering both standalone mode and a mocked Tauri bridge: bookmarks, profiles, account export, persistence, save/load failures, sandboxed HTML, desktop/mobile layouts and runtime errors.
 
-CurryClient uses external services for certain browsing features, including:
+To additionally test the real debug Tauri app on Windows:
 
-- **AVTRDB** — avatar discovery.
-- **VRClist** — world discovery.
+```powershell
+cargo build --manifest-path src-tauri/Cargo.toml --locked
+$env:CURRYCLIENT_EXECUTABLE = "$PWD\src-tauri\target\debug\curryclient.exe"
+npm test
+Remove-Item Env:CURRYCLIENT_EXECUTABLE
+```
 
-External services may change their APIs or availability, which can affect related features.
+The native test sets `CURRYCLIENT_TEST_DATA_DIR` and `CURRYCLIENT_TEST_CDP_PORT`, both honored **only by debug builds**. Rust passes the test port and temporary WebView directory directly to WebView2 because elevated Windows runners ignore WebView2 environment overrides ([Microsoft explanation](https://github.com/MicrosoftEdge/WebView2Feedback/issues/5645)). Release builds have neither this storage override nor built-in remote debugging. Mocked frontend tests do not prove native integration; native checks are reported separately.
 
-## Compatibility
+## Saved data and migration
 
-A modern browser with JavaScript enabled is recommended.
+Tauri stores avatars, worlds, profile IDs and labels in `%APPDATA%\com.curryclient.tauri\state.json`. Rust validates each full snapshot, writes a synced temporary file beside the destination, and atomically replaces the previous file. Save errors appear in the UI. Corrupt state blocks editing and is preserved for recovery rather than replaced with empty data.
 
-## Disclaimer
+The former Electron profile (`%APPDATA%\CurryClient`) and browser storage are untouched. **There is no automatic migration of Electron/browser bookmarks.** Export account labels from the old app and import them here; that export contains labels only. Avatar/world/profile bookmarks must be re-added. Imported HTML modules last only for the current session.
 
-CurryClient is an independent community project and is not an official VRChat product.
+Standalone mode: open `VRCclient.html` directly. It continues using localStorage and browser catalog requests. Its data remains separate from the Tauri app.
 
-VRChat is a trademark of its respective owner. This project is not affiliated with or endorsed by VRChat.
+## Native security boundaries
 
-Use the client responsibly and follow the rules and terms of the services you access.
+- Only the bundled main window has permission to call the four Rust commands. Remote pages receive no capabilities.
+- Browser links must use HTTPS and one exact host: `vrchat.com`, `avtrdb.com`, `vrclist.com`, `vrcmods.com`, or `drive.google.com`. Userinfo, explicit ports and other protocols/hosts are rejected.
+- New WebView windows and device permission requests are denied. External navigation cannot replace the app.
+- Catalog requests use fixed AVTRDB endpoints, a timeout, no redirects, a response-size limit, explicit-listing filtering and validated IDs/thumbnails.
+- Imported HTML remains in `sandbox=""` blob frames, with scripts, popups and top-level navigation disabled.
+
+AVTRDB, VRClist and VRCMods are external services and may change availability or behavior. Windows x64 is the tested target; macOS/Linux packaging and authenticated VRChat sessions require separate validation.
 
 ## License
 
-CurryClient is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
-
-You are free to:
-- Use the software.
-- Study and modify the source code.
-- Redistribute original or modified versions.
-- Share your modifications under the same license.
-
-All distributions and modifications must comply with the GNU GPL v3.0 terms.
-
-See the [LICENSE](LICENSE) file for the full license text.
-
-**SPDX-License-Identifier:** GPL-3.0-only
-
----
-
-**CurryClient** — Your VRChat workspace, all in one place.
+GNU GPL v3.0 only; see [LICENSE](LICENSE). Original upstream authors retain their copyrights. CurryClient is an independent community project, unaffiliated with or endorsed by VRChat.
