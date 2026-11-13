@@ -43,9 +43,9 @@ npm ci
 npm run dist:linux
 ```
 
-Packages appear in `src-tauri/target/release/bundle/deb/` and `src-tauri/target/release/bundle/appimage/`. On Debian/Ubuntu, install the `.deb` with `sudo apt install ./CurryClient_2.0.0_amd64.deb` so apt installs its GTK/WebKitGTK dependencies. For the AppImage, run `chmod +x CurryClient_2.0.0_amd64.AppImage` and then `./CurryClient_2.0.0_amd64.AppImage`. If FUSE is unavailable, use `./CurryClient_2.0.0_amd64.AppImage --appimage-extract-and-run`.
+Packages appear in `src-tauri/target/release/bundle/deb/` and `src-tauri/target/release/bundle/appimage/`. On Debian/Ubuntu, install the `.deb` with `sudo apt install ./CurryClient_2.0.1_amd64.deb` so apt installs its GTK/WebKitGTK dependencies. For the AppImage, run `chmod +x CurryClient_2.0.1_amd64.AppImage` and then `./CurryClient_2.0.1_amd64.AppImage`. If FUSE is unavailable, use `./CurryClient_2.0.1_amd64.AppImage --appimage-extract-and-run`.
 
-The `Linux` GitHub Actions workflow runs Rust tests and Clippy, builds both packages, and captures a native startup screenshot under Xvfb. Its manual `source_ref` input can package an existing release tag using `npm run tauri -- build --bundles deb,appimage --ci`, including tags from before the Linux npm script was added. This startup check does not cover every Linux desktop, display server, or authenticated VRChat session.
+The `Linux` GitHub Actions workflow runs Rust tests and Clippy, builds both packages, and captures a native startup screenshot under Xvfb. Its manual `source_ref` input can package an existing release tag using `npm run tauri -- build --bundles deb,appimage --ci`, Linux support starts with v2.0.1, which fixes initial navigation on WebKitGTK. This startup check does not cover every Linux desktop, display server, or authenticated VRChat session.
 
 ## Test
 

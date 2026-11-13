@@ -51,6 +51,7 @@ jobs:
           set -euo pipefail
           export XDG_DATA_HOME="$(mktemp -d)"
           export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          export WEBKIT_DISABLE_COMPOSITING_MODE=1
           export LIBGL_ALWAYS_SOFTWARE=1
           appimages=(src-tauri/target/release/bundle/appimage/*.AppImage)
           "${appimages[0]}" --appimage-extract-and-run >test-results/linux-startup.log 2>&1 &
@@ -68,6 +69,7 @@ jobs:
           kill -0 "$app_pid"
           import -window "$window" test-results/linux-startup.png
           test -s test-results/linux-startup.png
+          test "$(identify -format '%k' test-results/linux-startup.png)" -gt 20
           SMOKE
       - uses: actions/upload-artifact@v4
         with:

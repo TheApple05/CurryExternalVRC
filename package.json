@@ -1,6 +1,6 @@
 {
   "name": "curryclient",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Rust and Tauri VRChat companion",
   "license": "GPL-3.0-only",
