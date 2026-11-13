@@ -52,8 +52,11 @@ jobs:
           CURRYCLIENT_EXECUTABLE="$PWD/.local/linux-test/curryclient" xvfb-run -a npm test
       - name: Verify the AppImage launcher
         run: |
+          appimages=("$PWD"/dist/*.AppImage)
+          test "${#appimages[@]}" -eq 1
+          test -x "${appimages[0]}"
           mkdir -p .local/appimage-test
-          (cd .local/appimage-test && ../../dist/CurryClient-*-linux-x64.AppImage --appimage-extract > /dev/null)
+          (cd .local/appimage-test && "${appimages[0]}" --appimage-extract > /dev/null)
           cmp electron/AppRun .local/appimage-test/squashfs-root/AppRun
           test -f .local/appimage-test/squashfs-root/curryclient.desktop
           if grep -q -- '--no-sandbox' .local/appimage-test/squashfs-root/curryclient.desktop; then
@@ -64,11 +67,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libfuse2
-          CURRYCLIENT_EXECUTABLE="$PWD/$(echo dist/*-linux-x64.AppImage)" xvfb-run -a npm test
+          appimages=("$PWD"/dist/*.AppImage)
+          CURRYCLIENT_EXECUTABLE="${appimages[0]}" xvfb-run -a npm test
       - uses: actions/upload-artifact@v4
         with:
           name: CurryClient-Linux
           path: |
             dist/*-linux-x64.tar.gz
-            dist/*-linux-x64.AppImage
+            dist/*.AppImage
           if-no-files-found: error

@@ -76,8 +76,8 @@ Build the x86-64 Linux archive and AppImage on Linux with `npm ci` followed by `
 To run the AppImage from Releases:
 
 ```sh
-chmod +x CurryClient-1.0.0-linux-x64.AppImage
-./CurryClient-1.0.0-linux-x64.AppImage
+chmod +x CurryClient-1.0.0-linux-x86_64.AppImage
+./CurryClient-1.0.0-linux-x86_64.AppImage
 ```
 
 The AppImage uses FUSE 2 (`libfuse2` on Ubuntu 22.04). On hosts without FUSE, run it with `--appimage-extract`, then launch `squashfs-root/AppRun`. Its launcher preserves Chromium sandboxing and does not automatically disable it when the host blocks user namespaces.
