@@ -1,0 +1,35 @@
+{
+  "name": "curryclient",
+  "productName": "CurryClient",
+  "version": "1.0.0",
+  "description": "Desktop VRChat companion for browsing avatars, worlds, and local bookmarks",
+  "author": "CurryClient contributors",
+  "license": "GPL-3.0-only",
+  "repository": "https://github.com/oxykek/CurryExternalVRC.git",
+  "main": "electron/main.cjs",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "pack": "electron-builder --dir --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.1",
+    "playwright-core": "1.65.0"
+  },
+  "overrides": {
+    "app-builder-lib": { "minimatch": "^11.0.1" },
+    "@electron/universal": { "minimatch": "^11.0.1" }
+  },
+  "build": {
+    "appId": "com.curryclient.desktop",
+    "asar": true,
+    "files": ["electron/main.cjs", "VRCclient.html", "LICENSE", "README.md"],
+    "directories": { "output": "dist" },
+    "win": { "target": ["nsis", "portable"] },
+    "nsis": { "artifactName": "CurryClient-Setup-${version}.${ext}" },
+    "portable": { "artifactName": "CurryClient-Portable-${version}.${ext}" }
+  }
+}
