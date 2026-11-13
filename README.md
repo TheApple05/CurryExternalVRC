@@ -57,7 +57,7 @@ npm run pack
 npm run dist:win
 ```
 
-`pack` creates an unpacked app for the current platform. `dist:win` produces a Windows x64 installer (`CurryClient-Setup-1.0.0.exe`) and portable app (`CurryClient-Portable-1.0.0.exe`) in `dist/`. Build Windows packages on Windows. The Desktop GitHub Actions workflow tests and builds them, then uploads a `CurryClient-Windows` artifact on each PR and push to `main`.
+`pack` creates an unpacked app for the current platform. `dist:win` produces a Windows x64 installer (`CurryClient-Setup-1.0.0.exe`) and portable app (`CurryClient-Portable-1.0.0.exe`) in `dist/`. Build Windows packages on Windows. The Desktop GitHub Actions workflow tests and builds them, then uploads a `CurryClient-Windows` artifact on each PR and push.
 
 To test an unpacked Windows build in PowerShell:
 
